@@ -1,5 +1,10 @@
 {
-  "description": "Connect musicians with venues seeking live performances by providing event details, location, and direct contact options for booking opportunities.",
+  "title": "ColSong",
+  "language": "es",
+  "description": "ColSong conecta a artistas y bandas emergentes de Bogotá con establecimientos que buscan música en vivo: fechas, pago, ubicación y contacto en un solo lugar.",
+  "icons": {
+    "icon": "/colsong-logo.svg"
+  },
   "robots": {
     "index": false
   },

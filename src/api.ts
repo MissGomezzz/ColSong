@@ -37,7 +37,21 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export type User = { id: number; email: string; role: "artist" | "venue"; full_name: string };
-export type ArtistProfile = { stage_name: string; artist_type: string | null; completeness: number; missing: string[] };
+export type ArtistProfile = {
+  user_id: number;
+  stage_name: string;
+  artist_type: string | null;
+  bio: string | null;
+  genres: string[];
+  city: string;
+  phone: string | null;
+  instagram: string | null;
+  portfolio_url: string | null;
+  video_url: string | null;
+  completeness: number;
+  missing: string[];
+};
+export type ArtistProfileInput = Partial<Omit<ArtistProfile, "user_id" | "completeness" | "missing" | "city">>;
 
 type ApiOpportunity = {
   id: number;
@@ -130,6 +144,8 @@ export const api = {
   },
   me: () => request<User>("/auth/me"),
   myProfile: () => request<ArtistProfile>("/artists/me"),
+  updateProfile: (data: ArtistProfileInput) =>
+    request<ArtistProfile>("/artists/me", { method: "PUT", body: JSON.stringify(data) }),
   async opportunities(coords?: { lat: number; lng: number } | null) {
     const query = coords ? `?lat=${coords.lat}&lng=${coords.lng}` : "";
     return (await request<ApiOpportunity[]>(`/opportunities${query}`)).map(toOpportunity);

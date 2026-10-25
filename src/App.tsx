@@ -119,7 +119,7 @@ function initials(name: string) {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]!.toUpperCase()).join("");
 }
 
-function Header({ user, profile, onLogout, darkMode, onToggleTheme }: { user: User; profile: ArtistProfile | null; onLogout: () => void; darkMode: boolean; onToggleTheme: () => void }) {
+function Header({ user, profile, onProfile, darkMode, onToggleTheme }: { user: User; profile: ArtistProfile | null; onProfile: () => void; darkMode: boolean; onToggleTheme: () => void }) {
   return (
     <header className="app-header">
       <Brand />
@@ -129,7 +129,7 @@ function Header({ user, profile, onLogout, darkMode, onToggleTheme }: { user: Us
       <button className="theme-toggle" onClick={onToggleTheme} aria-label={darkMode ? "Activar modo claro" : "Activar modo oscuro"} title={darkMode ? "Modo claro" : "Modo oscuro"}>
         <Icon name={darkMode ? "sun" : "moon"} size={18} />
       </button>
-      <div className="profile" onClick={onLogout} role="button" tabIndex={0}>
+      <div className="profile" onClick={onProfile} onKeyDown={(event) => event.key === "Enter" && onProfile()} role="button" tabIndex={0} aria-label="Ver mi perfil">
         <div className="avatar">{initials(user.full_name)}</div>
         <div><b>{user.full_name}</b><span>{profile?.artist_type ?? "Artista"}</span></div>
         <Icon name="chevron" size={16} />
@@ -161,7 +161,7 @@ function OpportunityCard({ item, onSelect, onToggleSave }: { item: Opportunity; 
   );
 }
 
-function Dashboard({ user, profile, items, loading, error, onSelect, onToggleSave, onLogout, darkMode, onToggleTheme }: { user: User; profile: ArtistProfile | null; items: Opportunity[]; loading: boolean; error: string; onSelect: (item: Opportunity) => void; onToggleSave: (item: Opportunity) => void; onLogout: () => void; darkMode: boolean; onToggleTheme: () => void }) {
+function Dashboard({ user, profile, items, loading, error, onSelect, onToggleSave, onProfile, darkMode, onToggleTheme }: { user: User; profile: ArtistProfile | null; items: Opportunity[]; loading: boolean; error: string; onSelect: (item: Opportunity) => void; onToggleSave: (item: Opportunity) => void; onProfile: () => void; darkMode: boolean; onToggleTheme: () => void }) {
   const [query, setQuery] = useState("");
   const [location, setLocation] = useState("all");
   const [date, setDate] = useState("all");
@@ -186,11 +186,11 @@ function Dashboard({ user, profile, items, loading, error, onSelect, onToggleSav
 
   return (
     <div className="app-shell">
-      <Header user={user} profile={profile} onLogout={onLogout} darkMode={darkMode} onToggleTheme={onToggleTheme} />
+      <Header user={user} profile={profile} onProfile={onProfile} darkMode={darkMode} onToggleTheme={onToggleTheme} />
       <main className="dashboard">
         <div className="welcome">
           <div><div className="eyebrow">{new Date().toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long" }).toUpperCase()}</div><h1>Hola, {user.full_name.split(" ")[0]}. <span>¿Dónde tocarás ahora?</span></h1><p>{items.length === 1 ? "Encontramos 1 oportunidad abierta." : `Encontramos ${items.length} oportunidades abiertas.`}</p></div>
-          {profile && <div className="profile-score"><div className="score-ring" style={{ "--score": `${profile.completeness}%` } as React.CSSProperties}>{profile.completeness}<small>%</small></div><div><b>{profile.completeness >= 80 ? "Tu perfil destaca" : "Completa tu perfil"}</b><span>{profile.missing.length ? `Agrega ${profile.missing[0]} para llegar al 100%` : "¡Tu perfil está completo!"}</span></div><Icon name="chevron" size={18} /></div>}
+          {profile && <div className="profile-score" onClick={onProfile} onKeyDown={(event) => event.key === "Enter" && onProfile()} role="button" tabIndex={0} aria-label="Completar mi perfil"><div className="score-ring" style={{ "--score": `${profile.completeness}%` } as React.CSSProperties}>{profile.completeness}<small>%</small></div><div><b>{profile.completeness >= 80 ? "Tu perfil destaca" : "Completa tu perfil"}</b><span>{profile.missing.length ? `Agrega ${profile.missing[0]} para llegar al 100%` : "¡Tu perfil está completo!"}</span></div><Icon name="chevron" size={18} /></div>}
         </div>
         <div className="filters">
           <label className="search-box"><Icon name="search" size={19} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por lugar, evento o género" aria-label="Buscar oportunidades" /></label>
@@ -200,13 +200,13 @@ function Dashboard({ user, profile, items, loading, error, onSelect, onToggleSav
         </div>
         <div className="section-head"><div><h2>Oportunidades para ti</h2><p>{loading ? "Cargando oportunidades..." : `${filtered.length} ${filtered.length === 1 ? "resultado encontrado" : "resultados encontrados"}`}</p></div>{filtered.length < items.length && <button onClick={clearFilters}>Limpiar filtros</button>}</div>
         {error ? <div className="empty-state"><span><Icon name="search" size={24} /></span><h3>No pudimos cargar las oportunidades</h3><p>{error}</p></div> : filtered.length > 0 ? <div className="card-grid">{filtered.map((item) => <OpportunityCard key={item.id} item={item} onSelect={() => onSelect(item)} onToggleSave={() => onToggleSave(item)} />)}</div> : !loading && <div className="empty-state"><span><Icon name="search" size={24} /></span><h3>No encontramos oportunidades</h3><p>Prueba con otro lugar, horario o término de búsqueda.</p><button className="secondary-button" onClick={clearFilters}>Restablecer filtros</button></div>}
-        <div className="tip-banner"><span><Icon name="spark" /></span><div><b>Una buena primera impresión importa</b><p>Completa tu portafolio y aumenta tus posibilidades de conexión.</p></div><button>Completar perfil <Icon name="arrow" size={17} /></button></div>
+        <div className="tip-banner" onClick={onProfile}><span><Icon name="spark" /></span><div><b>{profile && profile.completeness >= 100 ? "Tu perfil está listo para conectar" : "Una buena primera impresión importa"}</b><p>{profile && profile.completeness >= 100 ? "Mantén tu portafolio y tus enlaces al día para destacar ante los lugares." : "Completa tu portafolio y aumenta tus posibilidades de conexión."}</p></div><button onClick={(event) => { event.stopPropagation(); onProfile(); }}>{profile && profile.completeness >= 100 ? "Editar perfil" : "Completar perfil"} <Icon name="arrow" size={17} /></button></div>
       </main>
     </div>
   );
 }
 
-function Detail({ item, user, profile, onBack, onToggleSave, onConnected, darkMode, onToggleTheme }: { item: Opportunity; user: User; profile: ArtistProfile | null; onBack: () => void; onToggleSave: () => void; onConnected: () => void; darkMode: boolean; onToggleTheme: () => void }) {
+function Detail({ item, user, profile, onBack, onProfile, onToggleSave, onConnected, darkMode, onToggleTheme }: { item: Opportunity; user: User; profile: ArtistProfile | null; onBack: () => void; onProfile: () => void; onToggleSave: () => void; onConnected: () => void; darkMode: boolean; onToggleTheme: () => void }) {
   const [connection, setConnection] = useState<"idle" | "confirm" | "sent">(item.applied ? "sent" : "idle");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState("");
@@ -226,7 +226,7 @@ function Detail({ item, user, profile, onBack, onToggleSave, onConnected, darkMo
   };
   return (
     <div className="app-shell">
-      <Header user={user} profile={profile} onLogout={onBack} darkMode={darkMode} onToggleTheme={onToggleTheme} />
+      <Header user={user} profile={profile} onProfile={onProfile} darkMode={darkMode} onToggleTheme={onToggleTheme} />
       <main className="detail-page">
         <button className="back-button" onClick={onBack}><Icon name="back" size={18} /> Volver a oportunidades</button>
         <div className="detail-layout">
@@ -263,6 +263,97 @@ function Detail({ item, user, profile, onBack, onToggleSave, onConnected, darkMo
   );
 }
 
+type ProfileForm = { stage_name: string; artist_type: string; genres: string; bio: string; phone: string; instagram: string; portfolio_url: string; video_url: string };
+
+const emptyForm: ProfileForm = { stage_name: "", artist_type: "", genres: "", bio: "", phone: "", instagram: "", portfolio_url: "", video_url: "" };
+
+function toForm(p: ArtistProfile): ProfileForm {
+  return {
+    stage_name: p.stage_name,
+    artist_type: p.artist_type ?? "",
+    genres: p.genres.join(", "),
+    bio: p.bio ?? "",
+    phone: p.phone ?? "",
+    instagram: p.instagram ?? "",
+    portfolio_url: p.portfolio_url ?? "",
+    video_url: p.video_url ?? "",
+  };
+}
+
+function ProfileScreen({ user, profile, onBack, onSaved, onLogout, darkMode, onToggleTheme }: { user: User; profile: ArtistProfile | null; onBack: () => void; onSaved: (profile: ArtistProfile) => void; onLogout: () => void; darkMode: boolean; onToggleTheme: () => void }) {
+  const [form, setForm] = useState<ProfileForm>(profile ? toForm(profile) : emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<{ type: "ok" | "error"; text: string } | null>(null);
+
+  useEffect(() => {
+    if (!profile) api.myProfile().then(onSaved).catch(() => setMessage({ type: "error", text: "No pudimos cargar tu perfil. Intenta de nuevo." }));
+  }, []);
+  useEffect(() => {
+    if (profile) setForm(toForm(profile));
+  }, [profile]);
+
+  const set = (key: keyof ProfileForm) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setForm({ ...form, [key]: event.target.value });
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSaving(true);
+    setMessage(null);
+    const orNull = (value: string) => value.trim() || null;
+    try {
+      const saved = await api.updateProfile({
+        stage_name: form.stage_name.trim(),
+        artist_type: orNull(form.artist_type),
+        genres: form.genres.split(",").map((genre) => genre.trim()).filter(Boolean),
+        bio: orNull(form.bio),
+        phone: orNull(form.phone),
+        instagram: orNull(form.instagram),
+        portfolio_url: orNull(form.portfolio_url),
+        video_url: orNull(form.video_url),
+      });
+      onSaved(saved);
+      setMessage({ type: "ok", text: "Cambios guardados." });
+    } catch (err) {
+      setMessage({ type: "error", text: err instanceof ApiError ? err.message : "No pudimos guardar tus cambios." });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const completeness = profile?.completeness ?? 0;
+  return (
+    <div className="app-shell">
+      <Header user={user} profile={profile} onProfile={() => undefined} darkMode={darkMode} onToggleTheme={onToggleTheme} />
+      <main className="detail-page">
+        <button className="back-button" onClick={onBack}><Icon name="back" size={18} /> Volver a oportunidades</button>
+        <form className="profile-card" onSubmit={submit}>
+          <div className="profile-card-head">
+            <div className="score-ring" style={{ "--score": `${completeness}%` } as React.CSSProperties}>{completeness}<small>%</small></div>
+            <div>
+              <h1>Tu perfil artístico</h1>
+              <p>{profile ? (profile.missing.length ? `Para llegar al 100% te falta: ${profile.missing.join(", ")}.` : "¡Tu perfil está completo!") : "Cargando tu perfil..."}</p>
+            </div>
+          </div>
+          <div className="profile-grid">
+            <div><label htmlFor="stage_name">Nombre artístico</label><div className="input-shell"><Icon name="user" size={18} /><input id="stage_name" value={form.stage_name} onChange={set("stage_name")} required maxLength={120} /></div></div>
+            <div><label htmlFor="artist_type">Tipo de artista</label><div className="input-shell"><Icon name="music" size={18} /><input id="artist_type" value={form.artist_type} onChange={set("artist_type")} placeholder="Cantautora, banda, DJ..." maxLength={80} /></div></div>
+            <div className="full-row"><label htmlFor="genres">Géneros (separados por coma)</label><div className="input-shell"><Icon name="spark" size={18} /><input id="genres" value={form.genres} onChange={set("genres")} placeholder="Folk, Indie, Jazz" /></div></div>
+            <div className="full-row"><label htmlFor="bio">Biografía</label><div className="input-shell area"><textarea id="bio" value={form.bio} onChange={set("bio")} placeholder="Cuéntale a los lugares quién eres y qué tocas." maxLength={2000} /></div></div>
+            <div><label htmlFor="phone">Teléfono</label><div className="input-shell"><input id="phone" type="tel" value={form.phone} onChange={set("phone")} placeholder="+57 300 000 0000" maxLength={40} /></div></div>
+            <div><label htmlFor="instagram">Instagram</label><div className="input-shell"><input id="instagram" value={form.instagram} onChange={set("instagram")} placeholder="@tu.usuario" maxLength={120} /></div></div>
+            <div><label htmlFor="portfolio_url">Portafolio</label><div className="input-shell"><input id="portfolio_url" type="url" value={form.portfolio_url} onChange={set("portfolio_url")} placeholder="https://..." maxLength={300} /></div></div>
+            <div><label htmlFor="video_url">Video</label><div className="input-shell"><input id="video_url" type="url" value={form.video_url} onChange={set("video_url")} placeholder="https://youtube.com/..." maxLength={300} /></div></div>
+          </div>
+          {message && <div className={message.type === "ok" ? "form-ok" : "form-error"} role="status">{message.text}</div>}
+          <div className="profile-actions">
+            <button className="primary-button" type="submit" disabled={saving || !profile}>{saving ? "Guardando..." : "Guardar cambios"}</button>
+            <button className="secondary-button" type="button" onClick={onLogout}>Cerrar sesión</button>
+          </div>
+        </form>
+      </main>
+    </div>
+  );
+}
+
 function getPosition(): Promise<{ lat: number; lng: number } | null> {
   return new Promise((resolve) => {
     if (!navigator.geolocation) return resolve(null);
@@ -275,7 +366,7 @@ function getPosition(): Promise<{ lat: number; lng: number } | null> {
 }
 
 export default function App() {
-  const [screen, setScreen] = useState<"login" | "dashboard" | "detail">("login");
+  const [screen, setScreen] = useState<"login" | "dashboard" | "detail" | "profile">("login");
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<ArtistProfile | null>(null);
   const [items, setItems] = useState<Opportunity[]>([]);
@@ -344,9 +435,12 @@ export default function App() {
   if (screen === "login" || !user) return <Login onEnter={enter} />;
   const selected = items.find((o) => o.id === selectedId);
   const toggleTheme = () => setDarkMode(!darkMode);
+  const openProfile = () => setScreen("profile");
   return <div className={darkMode ? "dark-mode" : ""}>
-    {screen === "detail" && selected
-      ? <Detail key={selected.id} item={selected} user={user} profile={profile} onBack={() => setScreen("dashboard")} onToggleSave={() => toggleSave(selected)} onConnected={() => markConnected(selected.id)} darkMode={darkMode} onToggleTheme={toggleTheme} />
-      : <Dashboard user={user} profile={profile} items={items} loading={loading} error={loadError} onLogout={logout} onToggleSave={toggleSave} onSelect={(item) => { setSelectedId(item.id); setScreen("detail"); }} darkMode={darkMode} onToggleTheme={toggleTheme} />}
+    {screen === "profile"
+      ? <ProfileScreen user={user} profile={profile} onBack={() => setScreen("dashboard")} onSaved={setProfile} onLogout={logout} darkMode={darkMode} onToggleTheme={toggleTheme} />
+      : screen === "detail" && selected
+      ? <Detail key={selected.id} item={selected} user={user} profile={profile} onBack={() => setScreen("dashboard")} onProfile={openProfile} onToggleSave={() => toggleSave(selected)} onConnected={() => markConnected(selected.id)} darkMode={darkMode} onToggleTheme={toggleTheme} />
+      : <Dashboard user={user} profile={profile} items={items} loading={loading} error={loadError} onProfile={openProfile} onToggleSave={toggleSave} onSelect={(item) => { setSelectedId(item.id); setScreen("detail"); }} darkMode={darkMode} onToggleTheme={toggleTheme} />}
   </div>;
 }

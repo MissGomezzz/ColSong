@@ -131,3 +131,14 @@ def test_register_new_artist(client):
     h = {"Authorization": f"Bearer {r.json()['access_token']}"}
     assert client.get("/api/artists/me", headers=h).json()["stage_name"] == "Los Nuevos"
     assert client.post("/api/auth/register", json={"email": "nuevo@banda.co", "password": "supersecreta", "full_name": "Otro"}).status_code == 409
+
+
+def test_profile_accepts_cleared_fields(client):
+    """El frontend envía null para campos vacíos: debe bajar el porcentaje, no fallar."""
+    h = login(client, "sofia@luna.com")
+    r = client.put("/api/artists/me", headers=h, json={"bio": None, "phone": None, "genres": []})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["missing"] == ["biografía", "géneros", "teléfono"]
+    assert body["completeness"] == 62
+    assert client.put("/api/artists/me", headers=h, json={"stage_name": ""}).status_code == 422
