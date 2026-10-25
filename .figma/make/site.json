@@ -1,0 +1,10 @@
+{
+  "description": "Connect musicians with venues seeking live performances by providing event details, location, and direct contact options for booking opportunities.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
