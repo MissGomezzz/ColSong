@@ -75,7 +75,7 @@ button { cursor: pointer; }
 .welcome h1 { font-family: 'Manrope', sans-serif; font-size: 33px; letter-spacing: -1.3px; margin: 11px 0 5px; }.welcome h1 span { color: var(--green); }
 .welcome p { margin: 0; color: var(--muted); font-size: 13px; }
 .profile-score { width: 340px; border: 1px solid var(--line); background: white; border-radius: 11px; padding: 13px 15px; display: flex; align-items: center; gap: 13px; }
-.score-ring { width: 48px; height: 48px; flex: 0 0 auto; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 13px; background: radial-gradient(circle, white 56%, transparent 58%), conic-gradient(var(--green) 84%, var(--line) 0); }.score-ring small { font-size: 8px; margin-left: 1px; }
+.score-ring { width: 48px; height: 48px; flex: 0 0 auto; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 13px; background: radial-gradient(circle, white 56%, transparent 58%), conic-gradient(var(--green) var(--score, 84%), var(--line) 0); }.score-ring small { font-size: 8px; margin-left: 1px; }
 .profile-score div:nth-child(2) { flex: 1; display: flex; flex-direction: column; font-size: 12px; }.profile-score span { color: var(--muted); font-size: 10px; margin-top: 3px; }
 .filters { display: flex; gap: 9px; margin: 34px 0 42px; }
 .search-box { height: 45px; flex: 1; max-width: 390px; border: 1px solid var(--line); border-radius: 8px; background: white; color: #929994; padding: 0 15px; display: flex; align-items: center; gap: 10px; font-size: 12px; }
@@ -102,6 +102,8 @@ button { cursor: pointer; }
 .meta-grid { display: grid; grid-template-columns: 1fr 1fr; margin: 18px 0; padding: 15px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }.meta-grid div { display: flex; align-items: center; gap: 7px; font-size: 10px; color: #4f5954; }.meta-grid div + div { border-left: 1px solid var(--line); padding-left: 15px; }
 .card-footer { display: flex; justify-content: space-between; align-items: center; }.card-footer div { display: flex; flex-direction: column; }.card-footer b { font: 800 16px 'Manrope'; }.card-footer small { color: var(--muted); font-size: 9px; }.card-footer button { width: 35px; height: 35px; border-radius: 50%; border: 0; display: grid; place-items: center; background: var(--green); color: white; }
 .tip-banner { margin-top: 35px; padding: 20px 25px; background: #eef5e2; border-radius: 11px; display: flex; align-items: center; gap: 14px; }.tip-banner > span { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: var(--lime); color: var(--green); }.tip-banner div { flex: 1; }.tip-banner b { font-size: 12px; }.tip-banner p { margin: 3px 0 0; color: var(--muted); font-size: 10px; }.tip-banner button { border: 0; background: none; color: var(--green); display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 700; }
+.form-error { margin: 14px 0 0; color: #b3524f; font-size: 12px; font-weight: 600; }
+.primary-button:disabled { opacity: .65; cursor: default; transform: none; }
 .empty-state { min-height: 320px; border: 1px dashed var(--line); border-radius: 13px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background: white; }
 .empty-state > span { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: var(--soft); color: var(--green); }
 .empty-state h3 { margin: 15px 0 5px; font: 700 17px 'Manrope'; }.empty-state p { margin: 0 0 12px; color: var(--muted); font-size: 11px; }.empty-state button { width: auto; padding: 0 18px; }
@@ -166,7 +168,7 @@ button { cursor: pointer; }
 .dark-mode .copy-section p,
 .dark-mode .included span,
 .dark-mode .meta-grid div { color: #a9b6af; }
-.dark-mode .score-ring { background: radial-gradient(circle, #16211c 56%, transparent 58%), conic-gradient(var(--green) 84%, var(--line) 0); }
+.dark-mode .score-ring { background: radial-gradient(circle, #16211c 56%, transparent 58%), conic-gradient(var(--green) var(--score, 84%), var(--line) 0); }
 .dark-mode .save-button,
 .dark-mode .fake-map small { color: #17221d; }
 .dark-mode .fake-map small { background: #ffffff; }

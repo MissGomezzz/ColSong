@@ -241,3 +241,8 @@ logs/
 # beside it.
 /.plugins/
 /.opencode-skills/
+
+# ColSong: bases de datos locales y plantillas de entorno versionadas
+*.db
+*.db-journal
+!.env.example
