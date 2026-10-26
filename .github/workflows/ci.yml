@@ -25,6 +25,21 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    # Base PostgreSQL desechable para probar contra el mismo motor que se usará en producción.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: colsong
+          POSTGRES_PASSWORD: colsong
+          POSTGRES_DB: colsong_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U colsong -d colsong_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
@@ -37,11 +52,17 @@ jobs:
       - name: Instalar dependencias
         run: pip install -r requirements-dev.txt
 
-      - name: Correr pruebas
+      - name: Pruebas (SQLite)
         run: python -m pytest -q
         env:
           # Las pruebas crean su propia base SQLite temporal; este secreto solo existe para el CI.
           JWT_SECRET: ci-only-secret-for-tests-0123456789abcdef
+
+      - name: Pruebas (PostgreSQL)
+        run: python -m pytest -q
+        env:
+          JWT_SECRET: ci-only-secret-for-tests-0123456789abcdef
+          TEST_DATABASE_URL: postgresql://colsong:colsong@localhost:5432/colsong_test
 
   frontend:
     name: Frontend (typecheck + build)

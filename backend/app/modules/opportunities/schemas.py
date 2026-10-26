@@ -3,6 +3,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.core.validators import HttpUrlStr
+
 
 class OpportunityIn(BaseModel):
     venue_id: int
@@ -13,7 +15,7 @@ class OpportunityIn(BaseModel):
     duration_minutes: int = Field(90, ge=15, le=600)
     pay_amount: int = Field(gt=0, le=100_000_000)
     pay_unit: Literal["toque", "hora"] = "toque"
-    image_url: str | None = Field(None, max_length=500)
+    image_url: HttpUrlStr | None = Field(None, max_length=500)
     includes: list[str] = Field(default_factory=list, max_length=20)
 
 
@@ -25,7 +27,7 @@ class OpportunityUpdate(BaseModel):
     duration_minutes: int | None = Field(None, ge=15, le=600)
     pay_amount: int | None = Field(None, gt=0, le=100_000_000)
     pay_unit: Literal["toque", "hora"] | None = None
-    image_url: str | None = Field(None, max_length=500)
+    image_url: HttpUrlStr | None = Field(None, max_length=500)
     includes: list[str] | None = Field(None, max_length=20)
     status: Literal["open", "closed"] | None = None
 
@@ -60,3 +62,7 @@ class OpportunityOut(BaseModel):
     interested_count: int = 0
     saved: bool = False
     my_application_status: str | None = None
+    own_image_url: str | None = None  # imagen propia de la publicación (sin el respaldo de la foto del local)
+    pending_count: int = 0  # postulaciones por revisar (panel del establecimiento)
+    is_past: bool = False
+    venue_phone: str | None = None  # solo se revela al artista cuyo interés fue aceptado

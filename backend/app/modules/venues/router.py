@@ -10,6 +10,9 @@ from app.modules.venues.schemas import VenueIn, VenueOut, VenueUpdate
 
 router = APIRouter(prefix="/venues", tags=["establecimientos"])
 
+# Campos que el establecimiento puede dejar vacíos; el resto ignora `null`.
+NULLABLE_FIELDS = {"description", "phone", "image_url", "latitude", "longitude"}
+
 
 @router.post("", response_model=VenueOut, status_code=201)
 def create_venue(
@@ -39,7 +42,8 @@ def update_venue(
     if not venue or venue.owner_id != user.id:
         raise HTTPException(404, "Establecimiento no encontrado")
     for key, value in body.model_dump(exclude_unset=True).items():
-        if value is not None:
-            setattr(venue, key, value)
+        if value is None and key not in NULLABLE_FIELDS:
+            continue
+        setattr(venue, key, value)
     db.commit()
     return venue

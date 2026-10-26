@@ -1,75 +1,27 @@
 import { useEffect, useState } from "react";
-import { api, ApiError, getToken, setToken, type ArtistProfile, type Opportunity, type User } from "./api";
+import { api, ApiError, getToken, setToken, type ArtistProfile, type Opportunity, type Role, type User } from "./api";
+import { Brand, Icon, OpportunityCard, initials } from "./ui";
+import VenueApp from "./VenueApp";
 
-type IconName =
-  | "arrow"
-  | "back"
-  | "calendar"
-  | "check"
-  | "chevron"
-  | "clock"
-  | "heart"
-  | "home"
-  | "mail"
-  | "map"
-  | "moon"
-  | "music"
-  | "search"
-  | "spark"
-  | "sun"
-  | "user";
+type EnterFn = (mode: "login" | "register", name: string, email: string, password: string, role: Role) => Promise<void>;
 
-function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
-  const paths: Record<IconName, React.ReactNode> = {
-    arrow: <><path d="M5 12h14" /><path d="m13 6 6 6-6 6" /></>,
-    back: <><path d="m15 18-6-6 6-6" /></>,
-    calendar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18" /></>,
-    check: <path d="m5 12 4 4L19 6" />,
-    chevron: <path d="m9 18 6-6-6-6" />,
-    clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
-    heart: <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.7-7.5a5.5 5.5 0 0 0 1.1-8.9Z" />,
-    home: <><path d="m3 11 9-8 9 8" /><path d="M5 10v10h14V10M9 20v-6h6v6" /></>,
-    mail: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></>,
-    map: <><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" /><circle cx="12" cy="10" r="2.5" /></>,
-    moon: <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 6.5 6.5 0 0 0 21 12.8Z" />,
-    music: <><path d="M9 18V5l10-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="16" cy="16" r="3" /></>,
-    search: <><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></>,
-    spark: <><path d="m12 3 1.3 4.2L17 9l-3.7 1.8L12 15l-1.3-4.2L7 9l3.7-1.8L12 3Z" /><path d="m19 15 .7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7L19 15Z" /></>,
-    sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42" /></>,
-    user: <><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></>,
-  };
-
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      {paths[name]}
-    </svg>
-  );
-}
-
-function Brand({ light = false }: { light?: boolean }) {
-  return (
-    <div className={`brand ${light ? "brand-light" : ""}`}>
-      <span className="brand-mark"><i></i><i></i><i></i><i></i></span>
-      <span>ColSong</span>
-    </div>
-  );
-}
-
-function Login({ onEnter }: { onEnter: (mode: "login" | "register", name: string, email: string, password: string) => Promise<void> }) {
+function Login({ onEnter }: { onEnter: EnterFn }) {
   const [mode, setMode] = useState<"login" | "register">("login");
+  const [role, setRole] = useState<Role>("artist");
   const [name, setName] = useState("");
   const [email, setEmail] = useState(import.meta.env.DEV ? "sofia@luna.com" : "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const isRegister = mode === "register";
+  const isVenue = role === "venue";
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError("");
     setLoading(true);
     try {
-      await onEnter(mode, name, email, password);
+      await onEnter(mode, name, email, password, role);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Ocurrió un error inesperado.");
       setLoading(false);
@@ -81,9 +33,9 @@ function Login({ onEnter }: { onEnter: (mode: "login" | "register", name: string
       <section className="login-visual">
         <div className="login-top"><Brand light /><span>Hecho para la escena local.</span></div>
         <div className="visual-copy">
-          <div className="eyebrow light"><Icon name="spark" size={16} /> Nuevas oportunidades cada semana</div>
-          <h1>Tu próximo escenario<br />está más cerca.</h1>
-          <p>Conecta con lugares que están buscando exactamente lo que tú haces.</p>
+          <div className="eyebrow light"><Icon name="spark" size={16} /> {isRegister && isVenue ? "Música en vivo para tu local" : "Nuevas oportunidades cada semana"}</div>
+          <h1>{isRegister && isVenue ? <>El talento de Bogotá<br />te está esperando.</> : <>Tu próximo escenario<br />está más cerca.</>}</h1>
+          <p>{isRegister && isVenue ? "Publica tus fechas, recibe propuestas de artistas emergentes y elige con quién conectar." : "Conecta con lugares que están buscando exactamente lo que tú haces."}</p>
           <div className="artist-row">
             <div className="artist-stack"><span>SM</span><span>LD</span><span>+8</span></div>
             <small>Artistas conectados hoy</small>
@@ -94,29 +46,29 @@ function Login({ onEnter }: { onEnter: (mode: "login" | "register", name: string
       <section className="login-panel">
         <div className="mobile-brand"><Brand /></div>
         <form className="login-form" onSubmit={submit}>
-          <div className="eyebrow">ACCESO PARA ARTISTAS</div>
+          <div className="eyebrow">{isRegister ? (isVenue ? "REGISTRO DE ESTABLECIMIENTOS" : "REGISTRO DE ARTISTAS") : "ACCESO A COLSONG"}</div>
           <h2>{isRegister ? "Crea tu perfil." : "Qué bueno verte."}</h2>
-          <p className="muted">{isRegister ? "Regístrate para descubrir oportunidades cerca de ti." : "Ingresa para descubrir oportunidades cerca de ti."}</p>
+          <p className="muted">{isRegister ? (isVenue ? "Regístrate para publicar toques y recibir artistas." : "Regístrate para descubrir oportunidades cerca de ti.") : "Ingresa para continuar con tu cuenta de artista o de establecimiento."}</p>
+          {isRegister && <div className="seg role-switch" role="group" aria-label="Tipo de cuenta">
+            <button type="button" className={!isVenue ? "active" : ""} onClick={() => setRole("artist")}><Icon name="music" size={15} /> Soy artista</button>
+            <button type="button" className={isVenue ? "active" : ""} onClick={() => setRole("venue")}><Icon name="home" size={15} /> Soy un establecimiento</button>
+          </div>}
           {isRegister && <>
-            <label>Nombre artístico</label>
-            <div className="input-shell"><Icon name="user" size={18} /><input value={name} onChange={(event) => setName(event.target.value)} aria-label="Nombre artístico" required minLength={2} autoComplete="name" /></div>
+            <label>{isVenue ? "Tu nombre" : "Nombre artístico"}</label>
+            <div className="input-shell"><Icon name="user" size={18} /><input value={name} onChange={(event) => setName(event.target.value)} aria-label={isVenue ? "Tu nombre" : "Nombre artístico"} required minLength={2} autoComplete="name" /></div>
           </>}
           <label>Correo electrónico</label>
           <div className="input-shell"><Icon name="mail" size={18} /><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} aria-label="Correo electrónico" required autoComplete="email" /></div>
           <div className="password-line"><label>Contraseña</label>{!isRegister && <button type="button" className="text-button">¿La olvidaste?</button>}</div>
           <div className="input-shell"><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="••••••••" aria-label="Contraseña" required minLength={isRegister ? 8 : undefined} autoComplete={isRegister ? "new-password" : "current-password"} /></div>
           {error && <div className="form-error" role="alert">{error}</div>}
-          <button className="primary-button full" type="submit" disabled={loading}>{loading ? "Un momento..." : isRegister ? "Crear mi perfil" : "Entrar a ColSong"} <Icon name="arrow" /></button>
-          {import.meta.env.DEV && !isRegister && <div className="prototype-note"><span><Icon name="spark" size={15} /></span><p><b>Modo demostración</b> — Usa sofia@luna.com y la contraseña colsong123.</p></div>}
+          <button className="primary-button full" type="submit" disabled={loading}>{loading ? "Un momento..." : isRegister ? (isVenue ? "Crear cuenta del local" : "Crear mi perfil") : "Entrar a ColSong"} <Icon name="arrow" /></button>
+          {import.meta.env.DEV && !isRegister && <div className="prototype-note"><span><Icon name="spark" size={15} /></span><p><b>Modo demostración</b> — Artista: sofia@luna.com · Local: casafrida@colsong.co · Contraseña: colsong123.</p></div>}
         </form>
-        <p className="signup-copy">{isRegister ? "¿Ya tienes cuenta? " : "¿Aún no haces parte? "}<b role="button" tabIndex={0} style={{ cursor: "pointer" }} onClick={() => { setError(""); setMode(isRegister ? "login" : "register"); }}>{isRegister ? "Inicia sesión" : "Crea tu perfil artístico"}</b></p>
+        <p className="signup-copy">{isRegister ? "¿Ya tienes cuenta? " : "¿Aún no haces parte? "}<b role="button" tabIndex={0} style={{ cursor: "pointer" }} onClick={() => { setError(""); setMode(isRegister ? "login" : "register"); }}>{isRegister ? "Inicia sesión" : "Crea tu perfil"}</b></p>
       </section>
     </main>
   );
-}
-
-function initials(name: string) {
-  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]!.toUpperCase()).join("");
 }
 
 function Header({ user, profile, onProfile, darkMode, onToggleTheme }: { user: User; profile: ArtistProfile | null; onProfile: () => void; darkMode: boolean; onToggleTheme: () => void }) {
@@ -138,29 +90,6 @@ function Header({ user, profile, onProfile, darkMode, onToggleTheme }: { user: U
   );
 }
 
-function OpportunityCard({ item, onSelect, onToggleSave }: { item: Opportunity; onSelect: () => void; onToggleSave: () => void }) {
-  return (
-    <article className="opportunity-card" onClick={onSelect}>
-      <div className="card-image" style={{ backgroundImage: `url("${item.image}")` }}>
-        {item.distance && <span className="distance"><Icon name="map" size={13} /> {item.distance}</span>}
-        <button className={`save-button ${item.saved ? "saved" : ""}`} onClick={(event) => { event.stopPropagation(); onToggleSave(); }} aria-label="Guardar oferta">
-          <Icon name="heart" size={18} />
-        </button>
-      </div>
-      <div className="card-body">
-        <div className="venue-line"><span className={`venue-icon ${item.accent}`}><Icon name="music" size={16} /></span><div><b>{item.venue}</b><small>{item.type}</small></div></div>
-        <h3>{item.title}</h3>
-        <div className="tag">{item.genre}</div>
-        <div className="meta-grid">
-          <div><Icon name="calendar" size={17} /><span>{item.date}</span></div>
-          <div><Icon name="clock" size={17} /><span>{item.time}</span></div>
-        </div>
-        <div className="card-footer"><div><b>{item.pay}</b><small>{item.unit}</small></div><button aria-label="Ver detalle"><Icon name="arrow" size={19} /></button></div>
-      </div>
-    </article>
-  );
-}
-
 function Dashboard({ user, profile, items, loading, error, onSelect, onToggleSave, onProfile, darkMode, onToggleTheme }: { user: User; profile: ArtistProfile | null; items: Opportunity[]; loading: boolean; error: string; onSelect: (item: Opportunity) => void; onToggleSave: (item: Opportunity) => void; onProfile: () => void; darkMode: boolean; onToggleTheme: () => void }) {
   const [query, setQuery] = useState("");
   const [location, setLocation] = useState("all");
@@ -176,8 +105,7 @@ function Dashboard({ user, profile, items, loading, error, onSelect, onToggleSav
 
   const filtered = items.filter((item) => {
     const searchable = `${item.venue} ${item.title} ${item.genre} ${item.type} ${item.city}`.toLowerCase();
-    const hour = Number(item.time.match(/\d+/)?.[0] ?? 0);
-    const period = item.time.includes("p. m.") && hour < 7 ? "afternoon" : "night";
+    const period = Number(item.startsAt.slice(11, 13)) < 19 ? "afternoon" : "night";
     return searchable.includes(query.trim().toLowerCase())
       && (location === "all" || item.city.startsWith(location))
       && (date === "all" || item.date === date)
@@ -194,7 +122,7 @@ function Dashboard({ user, profile, items, loading, error, onSelect, onToggleSav
         </div>
         <div className="filters">
           <label className="search-box"><Icon name="search" size={19} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por lugar, evento o género" aria-label="Buscar oportunidades" /></label>
-          <label className="select-filter"><Icon name="map" size={17} /><select value={location} onChange={(event) => setLocation(event.target.value)} aria-label="Filtrar por lugar"><option value="all">Toda Bogotá</option><option value="Chapinero">Chapinero</option><option value="La Macarena">La Macarena</option><option value="Teusaquillo">Teusaquillo</option></select><Icon name="chevron" size={14} /></label>
+          <label className="select-filter"><Icon name="map" size={17} /><select value={location} onChange={(event) => setLocation(event.target.value)} aria-label="Filtrar por lugar"><option value="all">Toda Bogotá</option>{[...new Set(items.map((item) => item.city.split(",")[0]))].sort().map((zone) => <option key={zone} value={zone}>{zone}</option>)}</select><Icon name="chevron" size={14} /></label>
           <label className="select-filter"><Icon name="calendar" size={17} /><select value={date} onChange={(event) => setDate(event.target.value)} aria-label="Filtrar por fecha"><option value="all">Cualquier fecha</option>{[...new Set(items.map((item) => item.date))].map((day) => <option key={day} value={day}>{day}</option>)}</select><Icon name="chevron" size={14} /></label>
           <label className="select-filter"><Icon name="clock" size={17} /><select value={time} onChange={(event) => setTime(event.target.value)} aria-label="Filtrar por hora"><option value="all">Cualquier hora</option><option value="afternoon">Antes de las 7 p. m.</option><option value="night">Desde las 7 p. m.</option></select><Icon name="chevron" size={14} /></label>
         </div>
@@ -210,6 +138,7 @@ function Detail({ item, user, profile, onBack, onProfile, onToggleSave, onConnec
   const [connection, setConnection] = useState<"idle" | "confirm" | "sent">(item.applied ? "sent" : "idle");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState("");
+  const decided = item.applicationStatus === "accepted" || item.applicationStatus === "rejected";
   const connect = async () => {
     setSending(true);
     setSendError("");
@@ -250,12 +179,13 @@ function Detail({ item, user, profile, onBack, onProfile, onToggleSave, onConnec
             <div className="offer-label">PAGO OFRECIDO</div><div className="offer-price">{item.pay}<span>{item.unit}</span></div><div className="separator"></div>
             <div className="host"><div className="host-avatar">{initials(item.venue)}</div><div><small>PUBLICADO POR</small><b>{item.venue}</b>{item.verified && <span><i></i> Identidad verificada</span>}</div></div>
             <div className="response"><div><Icon name="clock" size={17} /><span>Responde normalmente en <b>{item.responseHours === 1 ? "1 hora" : `${item.responseHours} horas`}</b></span></div><div><Icon name="user" size={17} /><span><b>{item.interested === 1 ? "1 artista" : `${item.interested} artistas`}</b> {item.interested === 1 ? "está interesado" : "están interesados"}</span></div></div>
-            {connection === "idle" && <>
+            {!decided && connection === "idle" && <>
               <button className="primary-button full" onClick={() => setConnection("confirm")}>Quiero conectar <Icon name="arrow" /></button>
               <p className="safe-note">No compartirás tus datos de contacto hasta que el lugar acepte.</p>
             </>}
-            {connection === "confirm" && <div className="confirm-box"><div className="confirm-icon"><Icon name="music" /></div><h3>¿Enviar tu perfil?</h3><p>{item.venue} verá tu perfil artístico y portafolio. Tus datos de contacto se comparten solo si aceptan.</p>{sendError && <div className="form-error" role="alert">{sendError}</div>}<button className="primary-button full" onClick={connect} disabled={sending}>{sending ? "Enviando..." : "Sí, enviar interés"}</button><button className="secondary-button full" onClick={() => setConnection("idle")}>Ahora no</button></div>}
-            {connection === "sent" && <div className="success-box"><div className="success-icon"><Icon name="check" size={28} /></div><h3>¡Conexión enviada!</h3><p>Le avisamos a {item.venue}. Podrás ver su respuesta aquí cuando la tengamos.</p><button className="secondary-button full" onClick={onBack}>Seguir explorando</button></div>}
+            {!decided && connection === "confirm" && <div className="confirm-box"><div className="confirm-icon"><Icon name="music" /></div><h3>¿Enviar tu perfil?</h3><p>{item.venue} verá tu perfil artístico y portafolio. Tus datos de contacto se comparten solo si aceptan.</p>{sendError && <div className="form-error" role="alert">{sendError}</div>}<button className="primary-button full" onClick={connect} disabled={sending}>{sending ? "Enviando..." : "Sí, enviar interés"}</button><button className="secondary-button full" onClick={() => setConnection("idle")}>Ahora no</button></div>}
+            {decided && <div className="success-box"><div className="success-icon">{item.applicationStatus === "accepted" ? <Icon name="check" size={28} /> : <Icon name="x" size={26} />}</div>{item.applicationStatus === "accepted" ? <><h3>¡{item.venue} aceptó tu perfil!</h3><p>Ya pueden coordinar la presentación.{item.contactPhone ? <> Escríbeles al <b>{item.contactPhone}</b>.</> : " Pronto se comunicarán contigo."}</p></> : <><h3>Esta vez no fue seleccionado</h3><p>{item.venue} eligió otra propuesta para esta fecha. ¡Hay más oportunidades esperándote!</p></>}<button className="secondary-button full" onClick={onBack}>Seguir explorando</button></div>}
+            {!decided && connection === "sent" && <div className="success-box"><div className="success-icon"><Icon name="check" size={28} /></div><h3>¡Conexión enviada!</h3><p>Le avisamos a {item.venue}. Podrás ver su respuesta aquí cuando la tengamos.</p><button className="secondary-button full" onClick={onBack}>Seguir explorando</button></div>}
           </aside>
         </div>
       </main>
@@ -403,20 +333,22 @@ export default function App() {
   useEffect(() => {
     if (!getToken()) return;
     api.me().then((me) => {
-      if (me.role !== "artist") return logout();
       setUser(me);
-      setScreen("dashboard");
-      loadData();
+      if (me.role === "artist") {
+        setScreen("dashboard");
+        loadData();
+      }
     }).catch(logout);
   }, []);
 
-  const enter = async (mode: "login" | "register", name: string, email: string, password: string) => {
-    const session = mode === "register" ? await api.register(name.trim(), email.trim(), password) : await api.login(email.trim(), password);
-    if (session.user.role !== "artist") throw new ApiError(403, "Por ahora el acceso web es solo para artistas.");
+  const enter: EnterFn = async (mode, name, email, password, role) => {
+    const session = mode === "register" ? await api.register(name.trim(), email.trim(), password, role) : await api.login(email.trim(), password);
     setToken(session.access_token);
     setUser(session.user);
-    setScreen("dashboard");
-    loadData();
+    if (session.user.role === "artist") {
+      setScreen("dashboard");
+      loadData();
+    }
   };
 
   const toggleSave = async (item: Opportunity) => {
@@ -432,9 +364,10 @@ export default function App() {
   const markConnected = (id: number) =>
     setItems((current) => current.map((o) => (o.id === id && !o.applied ? { ...o, applied: true, interested: o.interested + 1 } : o)));
 
+  const toggleTheme = () => setDarkMode(!darkMode);
+  if (user?.role === "venue") return <div className={darkMode ? "dark-mode" : ""}><VenueApp user={user} onLogout={logout} darkMode={darkMode} onToggleTheme={toggleTheme} /></div>;
   if (screen === "login" || !user) return <Login onEnter={enter} />;
   const selected = items.find((o) => o.id === selectedId);
-  const toggleTheme = () => setDarkMode(!darkMode);
   const openProfile = () => setScreen("profile");
   return <div className={darkMode ? "dark-mode" : ""}>
     {screen === "profile"

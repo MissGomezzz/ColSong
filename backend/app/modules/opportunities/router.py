@@ -15,6 +15,8 @@ from app.modules.venues.models import Venue
 
 router = APIRouter(prefix="/opportunities", tags=["oportunidades"])
 
+NULLABLE_FIELDS = {"description", "image_url"}  # el resto ignora `null`
+
 
 @router.get("", response_model=list[OpportunityOut])
 def list_open_opportunities(
@@ -84,11 +86,28 @@ def update_opportunity(
 ):
     """Edita una oportunidad o la cierra (`"status": "closed"`)."""
     opp = service.get_owned_opportunity(db, opportunity_id, user)
-    for key, value in body.model_dump(exclude_unset=True).items():
-        if value is None:
+    changes = body.model_dump(exclude_unset=True)
+    if "starts_at" in changes and changes["starts_at"] is not None:
+        changes["starts_at"] = changes["starts_at"].replace(tzinfo=None)
+        if changes["starts_at"] <= now_bogota():
+            raise HTTPException(422, "La fecha del evento debe ser futura")
+    if changes.get("status") == "open" and changes.get("starts_at", opp.starts_at) <= now_bogota():
+        raise HTTPException(422, "No puedes reabrir una publicación cuya fecha ya pasó; cambia la fecha primero")
+    for key, value in changes.items():
+        if value is None and key not in NULLABLE_FIELDS:
             continue
-        if key == "starts_at":
-            value = value.replace(tzinfo=None)
         setattr(opp, key, value)
     db.commit()
     return service.list_opportunities(db, user, opportunity_id=opp.id)[0]
+
+
+@router.delete("/{opportunity_id}", status_code=204)
+def delete_opportunity(
+    opportunity_id: int,
+    user: User = Depends(require_role(ROLE_VENUE)),
+    db: Session = Depends(get_db),
+):
+    """Elimina la publicación junto con sus postulaciones y favoritos (borrado en cascada)."""
+    opp = service.get_owned_opportunity(db, opportunity_id, user)
+    db.delete(opp)
+    db.commit()

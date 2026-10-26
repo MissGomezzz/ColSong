@@ -26,9 +26,18 @@ def _origins() -> list[str]:
     return [o.strip() for o in raw.split(",") if o.strip()]
 
 
+def _database_url() -> str:
+    """Normaliza URLs de PostgreSQL (p. ej. las de Neon o Render) al driver psycopg 3."""
+    url = os.getenv("DATABASE_URL", "sqlite:///./colsong.db")
+    for prefix in ("postgres://", "postgresql://"):
+        if url.startswith(prefix):
+            return "postgresql+psycopg://" + url[len(prefix):]
+    return url
+
+
 @dataclass(frozen=True)
 class Settings:
-    database_url: str = os.getenv("DATABASE_URL", "sqlite:///./colsong.db")
+    database_url: str = _database_url()
     jwt_secret: str = os.getenv("JWT_SECRET", "dev-only-secret-change-me-in-production")
     jwt_expire_minutes: int = int(os.getenv("JWT_EXPIRE_MINUTES", "10080"))
     cors_origins: list[str] = field(default_factory=_origins)

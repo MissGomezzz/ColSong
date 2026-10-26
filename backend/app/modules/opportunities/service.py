@@ -13,7 +13,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.core.timeutil import now_bogota
-from app.modules.applications.models import ACTIVE_STATUSES, Application
+from app.modules.applications.models import ACTIVE_STATUSES, STATUS_ACCEPTED, STATUS_PENDING, Application
 from app.modules.favorites.models import Favorite
 from app.modules.opportunities.models import STATUS_OPEN, Opportunity
 from app.modules.opportunities.schemas import OpportunityOut, VenueSummary
@@ -95,6 +95,14 @@ def list_opportunities(
             .group_by(Application.opportunity_id)
         ).all()
     )
+    pending = dict(
+        db.execute(
+            select(Application.opportunity_id, func.count())
+            .where(Application.opportunity_id.in_(ids), Application.status == STATUS_PENDING)
+            .group_by(Application.opportunity_id)
+        ).all()
+    )
+    now = now_bogota()
     saved: set[int] = set()
     my_status: dict[int, str] = {}
     if user:
@@ -147,6 +155,10 @@ def list_opportunities(
                 interested_count=interested.get(opp.id, 0),
                 saved=opp.id in saved,
                 my_application_status=my_status.get(opp.id),
+                own_image_url=opp.image_url,
+                pending_count=pending.get(opp.id, 0),
+                is_past=opp.starts_at < now,
+                venue_phone=venue.phone if my_status.get(opp.id) == STATUS_ACCEPTED else None,
             )
         )
     if lat is not None and lng is not None and not opportunity_id:

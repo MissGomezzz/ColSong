@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field
 
+from app.core.validators import HttpUrlStr
+
 # Campos que cuentan para el porcentaje de perfil completo y su etiqueta en español.
 COMPLETENESS_FIELDS = {
     "stage_name": "nombre artístico",
@@ -21,8 +23,8 @@ class ArtistProfileIn(BaseModel):
     city: str | None = Field(None, max_length=80)
     phone: str | None = Field(None, max_length=40)
     instagram: str | None = Field(None, max_length=120)
-    portfolio_url: str | None = Field(None, max_length=300)
-    video_url: str | None = Field(None, max_length=300)
+    portfolio_url: HttpUrlStr | None = Field(None, max_length=300)
+    video_url: HttpUrlStr | None = Field(None, max_length=300)
 
 
 class ArtistProfileOut(BaseModel):

@@ -8,7 +8,7 @@ Monolito modular en dos partes dentro del mismo repositorio:
 
 | Carpeta | Qué es |
 | --- | --- |
-| `src/` | Frontend React + Vite + Tailwind (artistas: login, explorar, detalle, favoritos, "Quiero conectar") |
+| `src/` | Frontend React + Vite + Tailwind. Artistas: explorar, detalle, favoritos, "Quiero conectar", perfil. Establecimientos: panel de publicaciones, formulario, interesados y perfil del local (`VenueApp.tsx`) |
 | `backend/` | API REST en FastAPI + SQLAlchemy (SQLite por defecto) |
 
 ## Cómo correrlo
@@ -28,6 +28,7 @@ La API queda en http://localhost:8000 y la documentación interactiva en http://
 | Rol | Correo | Contraseña |
 | --- | --- | --- |
 | Artista | `sofia@luna.com` | `colsong123` |
+| Establecimiento | `casafrida@colsong.co` (también `cafedelparque@…` y `distrito47@…`) | `colsong123` |
 | Establecimiento | `casafrida@colsong.co`, `cafedelparque@colsong.co`, `distrito47@colsong.co` | `colsong123` |
 
 **Frontend** (Node 22 + pnpm):
@@ -51,7 +52,7 @@ Cada push a `main` dispara `.github/workflows/ci.yml` en GitHub Actions, con dos
 
 | Trabajo | Qué hace |
 | --- | --- |
-| **Backend (pytest)** | Instala `backend/requirements-dev.txt` en Python 3.12 y corre las pruebas (`python -m pytest`) |
+| **Backend (pytest)** | Instala `backend/requirements-dev.txt` en Python 3.12 y corre las pruebas dos veces: con SQLite y contra un PostgreSQL 16 real (servicio del workflow) |
 | **Frontend (typecheck + build)** | `pnpm install --frozen-lockfile`, `pnpm typecheck` y `pnpm build` en Node 22 |
 
 El resultado se ve en la pestaña **Actions** del repositorio y en la insignia de arriba. Para reproducirlo en tu computador:
@@ -65,12 +66,22 @@ El despliegue continuo (CD) todavía no está configurado.
 
 ## Flujo de negocio
 
-1. Un **establecimiento** se registra (`role: "venue"`), crea su local (`POST /api/venues`) y publica toques (`POST /api/opportunities`).
-2. Un **artista** se registra desde la web, explora oportunidades (filtros por texto, barrio, fecha, horario y cercanía), guarda favoritos y pulsa **Quiero conectar**.
-3. El establecimiento ve los interesados (`GET /api/opportunities/{id}/applications`) y **acepta o rechaza** (`PATCH /api/applications/{id}`). Solo al aceptar se revelan el correo y el teléfono del artista.
-4. El artista ve el estado de sus postulaciones en `GET /api/applications/mine`.
+1. **Registro:** en la pantalla de acceso, "Crea tu perfil" permite elegir **artista** o **establecimiento**. Al iniciar sesión, la interfaz se adapta al rol de la cuenta.
+2. **Establecimiento:** completa el perfil de su local (nombre, tipo, barrio, dirección, foto, color) y desde su panel **crea publicaciones** (título, género, fecha y hora, duración, pago, descripción, qué incluye el lugar e imagen). Mientras escribe ve una **vista previa** de la tarjeta tal como la verán los artistas. Puede **editar, cerrar/reabrir, reprogramar y eliminar** cada publicación.
+3. **Artista:** explora las publicaciones abiertas (filtros por texto, barrio, fecha, horario y cercanía), guarda favoritos y pulsa **Quiero conectar**.
+4. **Establecimiento:** en "Interesados" ve el perfil de cada artista y **acepta o rechaza**. Solo al aceptar se revelan el correo y el teléfono del artista.
+5. **Artista:** al volver a la publicación ve si fue **aceptado** (y el teléfono del local) o no seleccionado.
 
-La interfaz web cubre el lado del artista; el lado del establecimiento ya está disponible en la API (probable desde `/docs`) y es el siguiente paso natural para construir un panel.
+Todo el flujo está disponible también en la API (`/docs`): `POST /api/venues`, `POST|PATCH|DELETE /api/opportunities`, `GET /api/opportunities/mine`, `GET /api/opportunities/{id}/applications`, `PATCH /api/applications/{id}`.
+
+## Persistencia de datos
+
+Las publicaciones, perfiles, postulaciones y favoritos se guardan en la base de datos configurada en `DATABASE_URL`, no en el navegador:
+
+- **Local:** SQLite (`backend/colsong.db`, se crea sola; ignorada por Git). Los datos sobreviven a reiniciar el servidor.
+- **Producción:** PostgreSQL. Basta con definir `DATABASE_URL` (por ejemplo, la URL que entrega Neon, `postgresql://...`); el backend ya incluye el driver y el CI prueba contra PostgreSQL 16 en cada push.
+- Los datos de demostración (`SEED_DEMO=true`) solo se cargan si la base está vacía.
+- Eliminar una publicación borra en cascada sus postulaciones y favoritos.
 
 ## Arquitectura del backend
 
@@ -95,5 +106,7 @@ Reglas del monolito modular: cada módulo tiene su `models`, `schemas`, `service
 
 - **Horarios:** `starts_at` se guarda como hora local de Bogotá (sin zona horaria), porque el producto opera en una sola ciudad.
 - **Verificación de establecimientos:** el campo `verified` lo gestiona el equipo de ColSong (por ahora directamente en la base de datos).
-- **Base de datos:** SQLite para arrancar; para producción basta con definir `DATABASE_URL` hacia PostgreSQL (y añadir `psycopg` a `requirements.txt`). Aún no hay migraciones (Alembic): las tablas se crean al arrancar.
+- **Migraciones:** aún no hay Alembic; las tablas se crean al arrancar. Si más adelante cambian columnas de tablas ya existentes en producción, habrá que añadir migraciones.
+- **Coordenadas de los locales:** al elegir un barrio de la lista se guardan coordenadas aproximadas de la zona; solo sirven para ordenar por cercanía y mostrar la distancia al artista.
+- **Enlaces:** el backend solo acepta enlaces `http(s)` en portafolio, video e imágenes, para que nadie pueda guardar un enlace malicioso que luego otro usuario vea.
 - **Seguridad antes de producción:** define un `JWT_SECRET` largo y aleatorio, restringe `CORS_ORIGINS` y desactiva `SEED_DEMO`.

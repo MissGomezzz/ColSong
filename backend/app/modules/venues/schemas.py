@@ -2,6 +2,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.core.validators import HttpUrlStr
+
 
 class VenueIn(BaseModel):
     name: str = Field(min_length=2, max_length=120)
@@ -12,7 +14,7 @@ class VenueIn(BaseModel):
     latitude: float | None = Field(None, ge=-90, le=90)
     longitude: float | None = Field(None, ge=-180, le=180)
     phone: str | None = Field(None, max_length=40)
-    image_url: str | None = Field(None, max_length=500)
+    image_url: HttpUrlStr | None = Field(None, max_length=500)
     accent: Literal["purple", "orange", "blue"] = "purple"
 
 
@@ -25,7 +27,7 @@ class VenueUpdate(BaseModel):
     latitude: float | None = Field(None, ge=-90, le=90)
     longitude: float | None = Field(None, ge=-180, le=180)
     phone: str | None = Field(None, max_length=40)
-    image_url: str | None = Field(None, max_length=500)
+    image_url: HttpUrlStr | None = Field(None, max_length=500)
     accent: Literal["purple", "orange", "blue"] | None = None
 
 
