@@ -1,5 +1,7 @@
 # ColSong
 
+[![CI](https://github.com/MissGomezzz/ColSong/actions/workflows/ci.yml/badge.svg)](https://github.com/MissGomezzz/ColSong/actions/workflows/ci.yml)
+
 Plataforma para gestionar la información de toques y presentaciones de los establecimientos para artistas y bandas emergentes en Bogotá.
 
 Monolito modular en dos partes dentro del mismo repositorio:
@@ -42,6 +44,24 @@ Si el backend corre en otra URL, crea `.env.local` con `VITE_API_URL=https://tu-
 ```bash
 cd backend && pip install -r requirements-dev.txt && pytest
 ```
+
+## Integración continua (CI)
+
+Cada push a `main` dispara `.github/workflows/ci.yml` en GitHub Actions, con dos trabajos en paralelo:
+
+| Trabajo | Qué hace |
+| --- | --- |
+| **Backend (pytest)** | Instala `backend/requirements-dev.txt` en Python 3.12 y corre las pruebas (`python -m pytest`) |
+| **Frontend (typecheck + build)** | `pnpm install --frozen-lockfile`, `pnpm typecheck` y `pnpm build` en Node 22 |
+
+El resultado se ve en la pestaña **Actions** del repositorio y en la insignia de arriba. Para reproducirlo en tu computador:
+
+```bash
+cd backend && pip install -r requirements-dev.txt && python -m pytest -q
+cd .. && pnpm install --frozen-lockfile && pnpm typecheck && pnpm build
+```
+
+El despliegue continuo (CD) todavía no está configurado.
 
 ## Flujo de negocio
 
