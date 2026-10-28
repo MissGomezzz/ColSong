@@ -252,3 +252,60 @@ def test_artist_sees_venue_phone_only_after_acceptance(client):
     detail = client.get(f"/api/opportunities/{pid}", headers=artist).json()
     assert detail["my_application_status"] == "accepted" and detail["venue_phone"] == venue["phone"]
     client.delete(f"/api/opportunities/{pid}", headers=owner)
+
+
+def test_contact_stays_hidden_until_the_venue_accepts(client):
+    """Política tipo Airbnb: dirección, teléfonos, Instagram y contactos en texto libre
+    solo se revelan cuando el local acepta al artista."""
+    owner = login(client, "casafrida@colsong.co")
+    artist = login(client, "sofia@luna.com")
+    venue = client.get("/api/venues/mine", headers=owner).json()[0]
+    pid = _new_post(
+        client, owner, venue["id"],
+        title="Noche de jazz (info 300 123 4567)",
+        description="Escríbenos a casa@frida.co o al +57 300 123 4567. Pago $1.200.000.",
+    )["id"]
+
+    # --- Antes de aceptar: el artista (y cualquier visitante) solo ve el barrio
+    for headers in (artist, {}):
+        d = client.get(f"/api/opportunities/{pid}?lat=4.65&lng=-74.06", headers=headers).json()
+        assert d["venue"]["address"] is None and d["venue"]["latitude"] is None and d["venue"]["longitude"] is None
+        assert d["venue"]["neighborhood"] == "Chapinero" and d["venue_phone"] is None
+        assert "300 123 4567" not in d["title"] and "casa@frida.co" not in d["description"]
+        assert "$1.200.000" in d["description"]  # los precios no se enmascaran
+        assert d["distance_km"] is not None and (d["distance_km"] * 2) % 1 == 0  # redondeada a 0,5 km
+    listed = next(o for o in client.get("/api/opportunities", headers=artist).json() if o["id"] == pid)
+    assert listed["venue"]["address"] is None
+    # el dueño sí ve su texto completo y la dirección
+    own = client.get(f"/api/opportunities/{pid}", headers=owner).json()
+    assert "casa@frida.co" in own["description"] and own["venue"]["address"] == venue["address"]
+
+    # --- El artista intenta colar su contacto en la biografía y en el mensaje
+    client.put("/api/artists/me", headers=artist,
+               json={"bio": "Escríbeme al 300 765 4321 o a @sofia.luna.music", "instagram": "@sofialuna.music"})
+    client.post(f"/api/opportunities/{pid}/applications", headers=artist, json={"message": "Mi correo es sofia@luna.com"})
+    apps_url = f"/api/opportunities/{pid}/applications"
+    first = client.get(apps_url, headers=owner).json()[0]
+    a = first["artist"]
+    assert a["instagram"] is None and a["email"] is None and a["phone"] is None
+    assert "765 4321" not in a["bio"] and "sofia.luna.music" not in a["bio"]
+    assert "sofia@luna.com" not in first["message"]
+    assert a["portfolio_url"]  # el portafolio sí se ve: es lo que permite evaluar al artista
+    entry = next(x for x in client.get("/api/applications/mine", headers=artist).json() if x["opportunity_id"] == pid)
+    assert entry["venue_contact"] is None and entry["venue_neighborhood"] == "Chapinero"
+    assert entry["message"] == "Mi correo es sofia@luna.com"  # el artista ve su propio mensaje completo
+    assert "300 123 4567" not in entry["opportunity_title"]
+
+    # --- Tras aceptar: se revela todo, en ambos sentidos
+    client.patch(f"/api/applications/{first['id']}", headers=owner, json={"status": "accepted"})
+    a = client.get(apps_url, headers=owner).json()[0]["artist"]
+    assert a["instagram"] == "@sofialuna.music" and a["email"] == "sofia@luna.com" and "765 4321" in a["bio"]
+    d = client.get(f"/api/opportunities/{pid}", headers=artist).json()
+    assert d["venue"]["address"] == venue["address"] and d["venue"]["latitude"] == venue["latitude"]
+    assert d["venue_phone"] == venue["phone"] and "casa@frida.co" in d["description"]
+    # y el artista conserva el contacto aunque el local cierre la publicación (ya no sale en el listado)
+    client.patch(f"/api/opportunities/{pid}", headers=owner, json={"status": "closed"})
+    assert pid not in [o["id"] for o in client.get("/api/opportunities", headers=artist).json()]
+    entry = next(x for x in client.get("/api/applications/mine", headers=artist).json() if x["opportunity_id"] == pid)
+    assert entry["venue_contact"] == {"address": venue["address"], "phone": venue["phone"]}
+    client.delete(f"/api/opportunities/{pid}", headers=owner)

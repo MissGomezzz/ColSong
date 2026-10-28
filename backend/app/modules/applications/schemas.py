@@ -27,6 +27,13 @@ class ArtistSummary(BaseModel):
     phone: str | None = None
 
 
+class VenueContact(BaseModel):
+    """Datos del local que el artista recibe solo cuando el local lo acepta."""
+
+    address: str
+    phone: str | None = None
+
+
 class ApplicationOut(BaseModel):
     id: int
     opportunity_id: int
@@ -35,5 +42,7 @@ class ApplicationOut(BaseModel):
     created_at: datetime
     opportunity_title: str | None = None
     venue_name: str | None = None
+    venue_neighborhood: str | None = None
+    venue_contact: VenueContact | None = None  # solo si el local aceptó
     starts_at: datetime | None = None
     artist: ArtistSummary | None = None  # solo en la vista del establecimiento

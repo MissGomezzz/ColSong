@@ -37,9 +37,9 @@ class VenueSummary(BaseModel):
     name: str
     venue_type: str
     neighborhood: str
-    address: str
-    latitude: float | None
-    longitude: float | None
+    address: str | None  # exacta: solo el dueño y el artista aceptado (ver core/privacy.py)
+    latitude: float | None  # ídem
+    longitude: float | None  # ídem
     verified: bool
     response_hours: int
     accent: str

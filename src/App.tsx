@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, ApiError, getToken, setToken, type ArtistProfile, type Opportunity, type Role, type User } from "./api";
+import { api, ApiError, formatStart, getToken, setToken, type ArtistProfile, type Connection, type Opportunity, type Role, type User } from "./api";
 import { Brand, Icon, OpportunityCard, initials } from "./ui";
 import VenueApp from "./VenueApp";
 
@@ -71,12 +71,15 @@ function Login({ onEnter }: { onEnter: EnterFn }) {
   );
 }
 
-function Header({ user, profile, onProfile, darkMode, onToggleTheme }: { user: User; profile: ArtistProfile | null; onProfile: () => void; darkMode: boolean; onToggleTheme: () => void }) {
+type ArtistNav = "explore" | "connections";
+
+function Header({ user, profile, active, onNavigate, onProfile, darkMode, onToggleTheme }: { user: User; profile: ArtistProfile | null; active?: ArtistNav; onNavigate: (to: ArtistNav) => void; onProfile: () => void; darkMode: boolean; onToggleTheme: () => void }) {
   return (
     <header className="app-header">
       <Brand />
-      <nav>
-        <button className="nav-link active"><Icon name="home" size={18} /> Explorar</button>
+      <nav className="venue-nav">
+        <button className={`nav-link ${active === "explore" ? "active" : ""}`} onClick={() => onNavigate("explore")}><Icon name="home" size={18} /> Explorar</button>
+        <button className={`nav-link ${active === "connections" ? "active" : ""}`} onClick={() => onNavigate("connections")}><Icon name="mail" size={18} /> Mis conexiones</button>
       </nav>
       <button className="theme-toggle" onClick={onToggleTheme} aria-label={darkMode ? "Activar modo claro" : "Activar modo oscuro"} title={darkMode ? "Modo claro" : "Modo oscuro"}>
         <Icon name={darkMode ? "sun" : "moon"} size={18} />
@@ -90,7 +93,7 @@ function Header({ user, profile, onProfile, darkMode, onToggleTheme }: { user: U
   );
 }
 
-function Dashboard({ user, profile, items, loading, error, onSelect, onToggleSave, onProfile, darkMode, onToggleTheme }: { user: User; profile: ArtistProfile | null; items: Opportunity[]; loading: boolean; error: string; onSelect: (item: Opportunity) => void; onToggleSave: (item: Opportunity) => void; onProfile: () => void; darkMode: boolean; onToggleTheme: () => void }) {
+function Dashboard({ user, profile, items, loading, error, onSelect, onToggleSave, onNavigate, onProfile, darkMode, onToggleTheme }: { user: User; profile: ArtistProfile | null; items: Opportunity[]; loading: boolean; error: string; onSelect: (item: Opportunity) => void; onToggleSave: (item: Opportunity) => void; onNavigate: (to: ArtistNav) => void; onProfile: () => void; darkMode: boolean; onToggleTheme: () => void }) {
   const [query, setQuery] = useState("");
   const [location, setLocation] = useState("all");
   const [date, setDate] = useState("all");
@@ -114,7 +117,7 @@ function Dashboard({ user, profile, items, loading, error, onSelect, onToggleSav
 
   return (
     <div className="app-shell">
-      <Header user={user} profile={profile} onProfile={onProfile} darkMode={darkMode} onToggleTheme={onToggleTheme} />
+      <Header user={user} profile={profile} active="explore" onNavigate={onNavigate} onProfile={onProfile} darkMode={darkMode} onToggleTheme={onToggleTheme} />
       <main className="dashboard">
         <div className="welcome">
           <div><div className="eyebrow">{new Date().toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long" }).toUpperCase()}</div><h1>Hola, {user.full_name.split(" ")[0]}. <span>¿Dónde tocarás ahora?</span></h1><p>{items.length === 1 ? "Encontramos 1 oportunidad abierta." : `Encontramos ${items.length} oportunidades abiertas.`}</p></div>
@@ -134,7 +137,7 @@ function Dashboard({ user, profile, items, loading, error, onSelect, onToggleSav
   );
 }
 
-function Detail({ item, user, profile, onBack, onProfile, onToggleSave, onConnected, darkMode, onToggleTheme }: { item: Opportunity; user: User; profile: ArtistProfile | null; onBack: () => void; onProfile: () => void; onToggleSave: () => void; onConnected: () => void; darkMode: boolean; onToggleTheme: () => void }) {
+function Detail({ item, user, profile, onBack, onNavigate, onProfile, onToggleSave, onConnected, darkMode, onToggleTheme }: { item: Opportunity; user: User; profile: ArtistProfile | null; onBack: () => void; onNavigate: (to: ArtistNav) => void; onProfile: () => void; onToggleSave: () => void; onConnected: () => void; darkMode: boolean; onToggleTheme: () => void }) {
   const [connection, setConnection] = useState<"idle" | "confirm" | "sent">(item.applied ? "sent" : "idle");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState("");
@@ -155,7 +158,7 @@ function Detail({ item, user, profile, onBack, onProfile, onToggleSave, onConnec
   };
   return (
     <div className="app-shell">
-      <Header user={user} profile={profile} onProfile={onProfile} darkMode={darkMode} onToggleTheme={onToggleTheme} />
+      <Header user={user} profile={profile} active="explore" onNavigate={onNavigate} onProfile={onProfile} darkMode={darkMode} onToggleTheme={onToggleTheme} />
       <main className="detail-page">
         <button className="back-button" onClick={onBack}><Icon name="back" size={18} /> Volver a oportunidades</button>
         <div className="detail-layout">
@@ -172,7 +175,7 @@ function Detail({ item, user, profile, onBack, onProfile, onToggleSave, onConnec
               </div>
               <div className="copy-section"><h2>Sobre la presentación</h2>{item.description.split(/\n\s*\n/).filter(Boolean).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
               {item.includes.length > 0 && <div className="included"><h3>El lugar incluye</h3><div>{item.includes.map((included) => <span key={included}><Icon name="check" size={16} /> {included}</span>)}</div></div>}
-              <div className="map-section"><div><h2>Ubicación</h2><p>{item.address}</p></div><button onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${item.venue}, ${item.address}, Bogotá`)}`, "_blank", "noopener")}>Cómo llegar <Icon name="arrow" size={16} /></button><div className="fake-map"><div className="road one"></div><div className="road two"></div><div className="road three"></div><span className="map-pin"><Icon name="music" size={17} /></span><small>{item.venue}</small></div></div>
+              <div className="map-section"><div><h2>Ubicación</h2><p>{item.address ?? `${item.city} · La dirección exacta se comparte cuando el lugar acepta tu perfil.`}</p></div>{item.address && <button onClick={() => window.open(mapsUrl(item.venue, item.address!), "_blank", "noopener")}>Cómo llegar <Icon name="arrow" size={16} /></button>}<div className="fake-map"><div className="road one"></div><div className="road two"></div><div className="road three"></div><span className="map-pin"><Icon name="music" size={17} /></span><small>{item.address ? item.venue : item.city.split(",")[0]}</small></div></div>
             </div>
           </section>
           <aside className="connection-card">
@@ -181,10 +184,10 @@ function Detail({ item, user, profile, onBack, onProfile, onToggleSave, onConnec
             <div className="response"><div><Icon name="clock" size={17} /><span>Responde normalmente en <b>{item.responseHours === 1 ? "1 hora" : `${item.responseHours} horas`}</b></span></div><div><Icon name="user" size={17} /><span><b>{item.interested === 1 ? "1 artista" : `${item.interested} artistas`}</b> {item.interested === 1 ? "está interesado" : "están interesados"}</span></div></div>
             {!decided && connection === "idle" && <>
               <button className="primary-button full" onClick={() => setConnection("confirm")}>Quiero conectar <Icon name="arrow" /></button>
-              <p className="safe-note">No compartirás tus datos de contacto hasta que el lugar acepte.</p>
+              <p className="safe-note">Tus datos de contacto y la dirección exacta del lugar se comparten entre ustedes solo cuando el lugar acepta tu perfil.</p>
             </>}
             {!decided && connection === "confirm" && <div className="confirm-box"><div className="confirm-icon"><Icon name="music" /></div><h3>¿Enviar tu perfil?</h3><p>{item.venue} verá tu perfil artístico y portafolio. Tus datos de contacto se comparten solo si aceptan.</p>{sendError && <div className="form-error" role="alert">{sendError}</div>}<button className="primary-button full" onClick={connect} disabled={sending}>{sending ? "Enviando..." : "Sí, enviar interés"}</button><button className="secondary-button full" onClick={() => setConnection("idle")}>Ahora no</button></div>}
-            {decided && <div className="success-box"><div className="success-icon">{item.applicationStatus === "accepted" ? <Icon name="check" size={28} /> : <Icon name="x" size={26} />}</div>{item.applicationStatus === "accepted" ? <><h3>¡{item.venue} aceptó tu perfil!</h3><p>Ya pueden coordinar la presentación.{item.contactPhone ? <> Escríbeles al <b>{item.contactPhone}</b>.</> : " Pronto se comunicarán contigo."}</p></> : <><h3>Esta vez no fue seleccionado</h3><p>{item.venue} eligió otra propuesta para esta fecha. ¡Hay más oportunidades esperándote!</p></>}<button className="secondary-button full" onClick={onBack}>Seguir explorando</button></div>}
+            {decided && <div className="success-box"><div className="success-icon">{item.applicationStatus === "accepted" ? <Icon name="check" size={28} /> : <Icon name="x" size={26} />}</div>{item.applicationStatus === "accepted" ? <><h3>¡{item.venue} aceptó tu perfil!</h3><p>Ya pueden coordinar la presentación.{item.contactPhone ? <> Escríbeles al <b>{item.contactPhone}</b>.</> : " Pronto se comunicarán contigo."} Siempre encontrarás estos datos en “Mis conexiones”.</p></> : <><h3>Esta vez no fue seleccionado</h3><p>{item.venue} eligió otra propuesta para esta fecha. ¡Hay más oportunidades esperándote!</p></>}<button className="secondary-button full" onClick={onBack}>Seguir explorando</button></div>}
             {!decided && connection === "sent" && <div className="success-box"><div className="success-icon"><Icon name="check" size={28} /></div><h3>¡Conexión enviada!</h3><p>Le avisamos a {item.venue}. Podrás ver su respuesta aquí cuando la tengamos.</p><button className="secondary-button full" onClick={onBack}>Seguir explorando</button></div>}
           </aside>
         </div>
@@ -210,7 +213,7 @@ function toForm(p: ArtistProfile): ProfileForm {
   };
 }
 
-function ProfileScreen({ user, profile, onBack, onSaved, onLogout, darkMode, onToggleTheme }: { user: User; profile: ArtistProfile | null; onBack: () => void; onSaved: (profile: ArtistProfile) => void; onLogout: () => void; darkMode: boolean; onToggleTheme: () => void }) {
+function ProfileScreen({ user, profile, onBack, onNavigate, onSaved, onLogout, darkMode, onToggleTheme }: { user: User; profile: ArtistProfile | null; onBack: () => void; onNavigate: (to: ArtistNav) => void; onSaved: (profile: ArtistProfile) => void; onLogout: () => void; darkMode: boolean; onToggleTheme: () => void }) {
   const [form, setForm] = useState<ProfileForm>(profile ? toForm(profile) : emptyForm);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "ok" | "error"; text: string } | null>(null);
@@ -252,7 +255,7 @@ function ProfileScreen({ user, profile, onBack, onSaved, onLogout, darkMode, onT
   const completeness = profile?.completeness ?? 0;
   return (
     <div className="app-shell">
-      <Header user={user} profile={profile} onProfile={() => undefined} darkMode={darkMode} onToggleTheme={onToggleTheme} />
+      <Header user={user} profile={profile} onNavigate={onNavigate} onProfile={() => undefined} darkMode={darkMode} onToggleTheme={onToggleTheme} />
       <main className="detail-page">
         <button className="back-button" onClick={onBack}><Icon name="back" size={18} /> Volver a oportunidades</button>
         <form className="profile-card" onSubmit={submit}>
@@ -270,6 +273,7 @@ function ProfileScreen({ user, profile, onBack, onSaved, onLogout, darkMode, onT
             <div className="full-row"><label htmlFor="bio">Biografía</label><div className="input-shell area"><textarea id="bio" value={form.bio} onChange={set("bio")} placeholder="Cuéntale a los lugares quién eres y qué tocas." maxLength={2000} /></div></div>
             <div><label htmlFor="phone">Teléfono</label><div className="input-shell"><input id="phone" type="tel" value={form.phone} onChange={set("phone")} placeholder="+57 300 000 0000" maxLength={40} /></div></div>
             <div><label htmlFor="instagram">Instagram</label><div className="input-shell"><input id="instagram" value={form.instagram} onChange={set("instagram")} placeholder="@tu.usuario" maxLength={120} /></div></div>
+            <p className="hint full-row">Tu teléfono e Instagram solo se comparten con los lugares que acepten tu perfil, y los contactos escritos en tu biografía se ocultan hasta entonces.</p>
             <div><label htmlFor="portfolio_url">Portafolio</label><div className="input-shell"><input id="portfolio_url" type="url" value={form.portfolio_url} onChange={set("portfolio_url")} placeholder="https://..." maxLength={300} /></div></div>
             <div><label htmlFor="video_url">Video</label><div className="input-shell"><input id="video_url" type="url" value={form.video_url} onChange={set("video_url")} placeholder="https://youtube.com/..." maxLength={300} /></div></div>
           </div>
@@ -279,6 +283,72 @@ function ProfileScreen({ user, profile, onBack, onSaved, onLogout, darkMode, onT
             <button className="secondary-button" type="button" onClick={onLogout}>Cerrar sesión</button>
           </div>
         </form>
+      </main>
+    </div>
+  );
+}
+
+function mapsUrl(venue: string, address: string) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${venue}, ${address}, Bogotá`)}`;
+}
+
+const CONNECTION_LABEL: Record<string, string> = { pending: "En revisión", accepted: "Aceptada", rejected: "No seleccionada" };
+
+function ConnectionCard({ c }: { c: Connection }) {
+  const when = c.starts_at ? formatStart(c.starts_at) : null;
+  const contact = c.venue_contact;
+  return (
+    <article className="applicant">
+      <div className="applicant-head">
+        <div className="avatar">{initials(c.venue_name ?? "?")}</div>
+        <div className="applicant-id"><b>{c.venue_name}</b><small>{c.venue_neighborhood}, Bogotá{when ? ` · ${when.date} · ${when.time}` : ""}</small></div>
+        <span className={`status-pill ${c.status}`}>{CONNECTION_LABEL[c.status]}</span>
+      </div>
+      {c.opportunity_title && <p className="applicant-bio">{c.opportunity_title}</p>}
+      {c.status === "accepted" && contact && <>
+        <div className="contact-box">
+          <b>Datos del lugar</b>
+          <span><Icon name="map" size={15} /> {contact.address}</span>
+          <span><Icon name="phone" size={15} /> {contact.phone ?? "El lugar se pondrá en contacto contigo"}</span>
+        </div>
+        <div className="card-actions"><button className="mini-button solid" onClick={() => window.open(mapsUrl(c.venue_name ?? "", contact.address), "_blank", "noopener")}>Cómo llegar <Icon name="arrow" size={14} /></button></div>
+      </>}
+      {c.status === "pending" && <p className="hint">Te avisaremos aquí cuando respondan. Si te aceptan, verás la dirección y el teléfono del lugar.</p>}
+    </article>
+  );
+}
+
+function ConnectionsScreen({ user, profile, onNavigate, onProfile, darkMode, onToggleTheme }: { user: User; profile: ArtistProfile | null; onNavigate: (to: ArtistNav) => void; onProfile: () => void; darkMode: boolean; onToggleTheme: () => void }) {
+  const [list, setList] = useState<Connection[] | null>(null);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    api.myConnections()
+      .then((all) => setList(all.filter((c) => c.status !== "withdrawn")))
+      .catch((err) => setError(err instanceof ApiError ? err.message : "No pudimos cargar tus conexiones."));
+  }, []);
+  const accepted = list?.filter((c) => c.status === "accepted").length ?? 0;
+  const pending = list?.filter((c) => c.status === "pending").length ?? 0;
+  return (
+    <div className="app-shell">
+      <Header user={user} profile={profile} active="connections" onNavigate={onNavigate} onProfile={onProfile} darkMode={darkMode} onToggleTheme={onToggleTheme} />
+      <main className="detail-page">
+        <div className="profile-card applicants-card">
+          <div className="profile-card-head">
+            <span className="head-icon"><Icon name="mail" size={24} /></span>
+            <div>
+              <h1>Mis conexiones</h1>
+              <p>Las publicaciones a las que enviaste tu interés y la respuesta de cada lugar.</p>
+            </div>
+          </div>
+          {error && <div className="form-error" role="alert">{error}</div>}
+          {!list && !error && <p className="applicants-summary">Cargando tus conexiones...</p>}
+          {list && list.length === 0 && <>
+            <p className="applicants-summary">Todavía no has enviado tu interés a ninguna publicación.</p>
+            <button className="primary-button" onClick={() => onNavigate("explore")}>Explorar oportunidades <Icon name="arrow" /></button>
+          </>}
+          {list && list.length > 0 && <p className="applicants-summary">{pending} en revisión · {accepted} {accepted === 1 ? "aceptada" : "aceptadas"}. La dirección y el teléfono de cada lugar se muestran cuando acepta tu perfil.</p>}
+          <div className="applicant-list">{list?.map((c) => <ConnectionCard key={c.id} c={c} />)}</div>
+        </div>
       </main>
     </div>
   );
@@ -296,7 +366,7 @@ function getPosition(): Promise<{ lat: number; lng: number } | null> {
 }
 
 export default function App() {
-  const [screen, setScreen] = useState<"login" | "dashboard" | "detail" | "profile">("login");
+  const [screen, setScreen] = useState<"login" | "dashboard" | "detail" | "profile" | "connections">("login");
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<ArtistProfile | null>(null);
   const [items, setItems] = useState<Opportunity[]>([]);
@@ -369,11 +439,14 @@ export default function App() {
   if (screen === "login" || !user) return <Login onEnter={enter} />;
   const selected = items.find((o) => o.id === selectedId);
   const openProfile = () => setScreen("profile");
+  const navigate = (to: ArtistNav) => setScreen(to === "explore" ? "dashboard" : "connections");
   return <div className={darkMode ? "dark-mode" : ""}>
     {screen === "profile"
-      ? <ProfileScreen user={user} profile={profile} onBack={() => setScreen("dashboard")} onSaved={setProfile} onLogout={logout} darkMode={darkMode} onToggleTheme={toggleTheme} />
+      ? <ProfileScreen user={user} profile={profile} onBack={() => setScreen("dashboard")} onNavigate={navigate} onSaved={setProfile} onLogout={logout} darkMode={darkMode} onToggleTheme={toggleTheme} />
+      : screen === "connections"
+      ? <ConnectionsScreen user={user} profile={profile} onNavigate={navigate} onProfile={openProfile} darkMode={darkMode} onToggleTheme={toggleTheme} />
       : screen === "detail" && selected
-      ? <Detail key={selected.id} item={selected} user={user} profile={profile} onBack={() => setScreen("dashboard")} onProfile={openProfile} onToggleSave={() => toggleSave(selected)} onConnected={() => markConnected(selected.id)} darkMode={darkMode} onToggleTheme={toggleTheme} />
-      : <Dashboard user={user} profile={profile} items={items} loading={loading} error={loadError} onProfile={openProfile} onToggleSave={toggleSave} onSelect={(item) => { setSelectedId(item.id); setScreen("detail"); }} darkMode={darkMode} onToggleTheme={toggleTheme} />}
+      ? <Detail key={selected.id} item={selected} user={user} profile={profile} onBack={() => setScreen("dashboard")} onNavigate={navigate} onProfile={openProfile} onToggleSave={() => toggleSave(selected)} onConnected={() => markConnected(selected.id)} darkMode={darkMode} onToggleTheme={toggleTheme} />
+      : <Dashboard user={user} profile={profile} items={items} loading={loading} error={loadError} onNavigate={navigate} onProfile={openProfile} onToggleSave={toggleSave} onSelect={(item) => { setSelectedId(item.id); setScreen("detail"); }} darkMode={darkMode} onToggleTheme={toggleTheme} />}
   </div>;
 }

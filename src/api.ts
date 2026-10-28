@@ -122,6 +122,19 @@ export type Applicant = {
   };
 };
 
+/** Postulación del artista. `venue_contact` llega solo cuando el local aceptó. */
+export type Connection = {
+  id: number;
+  opportunity_id: number;
+  status: "pending" | "accepted" | "rejected" | "withdrawn";
+  created_at: string;
+  opportunity_title: string | null;
+  venue_name: string | null;
+  venue_neighborhood: string | null;
+  venue_contact: { address: string; phone: string | null } | null;
+  starts_at: string | null;
+};
+
 type ApiOpportunity = {
   id: number;
   title: string;
@@ -134,7 +147,7 @@ type ApiOpportunity = {
   image_url: string | null;
   includes: string[];
   status: "open" | "closed";
-  venue: { id: number; name: string; venue_type: string; neighborhood: string; address: string; verified: boolean; response_hours: number; accent: string };
+  venue: { id: number; name: string; venue_type: string; neighborhood: string; address: string | null; verified: boolean; response_hours: number; accent: string };
   distance_km: number | null;
   interested_count: number;
   saved: boolean;
@@ -164,7 +177,7 @@ export type Opportunity = {
   genre: string;
   distance: string | null;
   city: string;
-  address: string;
+  address: string | null; // dirección exacta: solo tras la aceptación del local (el artista ve solo el barrio)
   image: string;
   ownImage: string | null;
   accent: string;
@@ -276,6 +289,7 @@ export const api = {
   setSaved: (id: number, saved: boolean) =>
     request<{ saved: boolean }>(`/opportunities/${id}/favorite`, { method: saved ? "PUT" : "DELETE" }),
   connect: (id: number) => request(`/opportunities/${id}/applications`, { method: "POST", body: json({}) }),
+  myConnections: () => request<Connection[]>("/applications/mine"),
 
   // Establecimiento
   myVenues: () => request<Venue[]>("/venues/mine"),

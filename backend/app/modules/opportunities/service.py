@@ -12,6 +12,7 @@ from fastapi import HTTPException
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
+from app.core.privacy import mask_contact_info
 from app.core.timeutil import now_bogota
 from app.modules.applications.models import ACTIVE_STATUSES, STATUS_ACCEPTED, STATUS_PENDING, Application
 from app.modules.favorites.models import Favorite
@@ -123,14 +124,20 @@ def list_opportunities(
 
     results = []
     for opp, venue in rows:
+        # Política de contacto (core/privacy.py): el dueño y el artista aceptado ven todo;
+        # el resto ve solo el barrio y el texto con los contactos enmascarados.
+        status = my_status.get(opp.id)
+        unlocked = status == STATUS_ACCEPTED or (user is not None and venue.owner_id == user.id)
         distance = None
         if None not in (lat, lng, venue.latitude, venue.longitude):
-            distance = round(_distance_km(lat, lng, venue.latitude, venue.longitude), 1)
+            km = _distance_km(lat, lng, venue.latitude, venue.longitude)
+            # Distancia redondeada a 0,5 km para que no sirva para ubicar el local con precisión.
+            distance = round(km, 1) if unlocked else max(0.5, round(km * 2) / 2)
         results.append(
             OpportunityOut(
                 id=opp.id,
-                title=opp.title,
-                description=opp.description,
+                title=opp.title if unlocked else mask_contact_info(opp.title),
+                description=opp.description if unlocked else mask_contact_info(opp.description),
                 genre=opp.genre,
                 starts_at=opp.starts_at,
                 duration_minutes=opp.duration_minutes,
@@ -144,9 +151,9 @@ def list_opportunities(
                     name=venue.name,
                     venue_type=venue.venue_type,
                     neighborhood=venue.neighborhood,
-                    address=venue.address,
-                    latitude=venue.latitude,
-                    longitude=venue.longitude,
+                    address=venue.address if unlocked else None,
+                    latitude=venue.latitude if unlocked else None,
+                    longitude=venue.longitude if unlocked else None,
                     verified=venue.verified,
                     response_hours=venue.response_hours,
                     accent=venue.accent,
@@ -154,11 +161,11 @@ def list_opportunities(
                 distance_km=distance,
                 interested_count=interested.get(opp.id, 0),
                 saved=opp.id in saved,
-                my_application_status=my_status.get(opp.id),
+                my_application_status=status,
                 own_image_url=opp.image_url,
                 pending_count=pending.get(opp.id, 0),
                 is_past=opp.starts_at < now,
-                venue_phone=venue.phone if my_status.get(opp.id) == STATUS_ACCEPTED else None,
+                venue_phone=venue.phone if status == STATUS_ACCEPTED else None,
             )
         )
     if lat is not None and lng is not None and not opportunity_id:

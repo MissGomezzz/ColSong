@@ -28,7 +28,6 @@ La API queda en http://localhost:8000 y la documentación interactiva en http://
 | Rol | Correo | Contraseña |
 | --- | --- | --- |
 | Artista | `sofia@luna.com` | `colsong123` |
-| Establecimiento | `casafrida@colsong.co` (también `cafedelparque@…` y `distrito47@…`) | `colsong123` |
 | Establecimiento | `casafrida@colsong.co`, `cafedelparque@colsong.co`, `distrito47@colsong.co` | `colsong123` |
 
 **Frontend** (Node 22 + pnpm):
@@ -69,10 +68,27 @@ El despliegue continuo (CD) todavía no está configurado.
 1. **Registro:** en la pantalla de acceso, "Crea tu perfil" permite elegir **artista** o **establecimiento**. Al iniciar sesión, la interfaz se adapta al rol de la cuenta.
 2. **Establecimiento:** completa el perfil de su local (nombre, tipo, barrio, dirección, foto, color) y desde su panel **crea publicaciones** (título, género, fecha y hora, duración, pago, descripción, qué incluye el lugar e imagen). Mientras escribe ve una **vista previa** de la tarjeta tal como la verán los artistas. Puede **editar, cerrar/reabrir, reprogramar y eliminar** cada publicación.
 3. **Artista:** explora las publicaciones abiertas (filtros por texto, barrio, fecha, horario y cercanía), guarda favoritos y pulsa **Quiero conectar**.
-4. **Establecimiento:** en "Interesados" ve el perfil de cada artista y **acepta o rechaza**. Solo al aceptar se revelan el correo y el teléfono del artista.
-5. **Artista:** al volver a la publicación ve si fue **aceptado** (y el teléfono del local) o no seleccionado.
+4. **Establecimiento:** en "Interesados" ve el perfil de cada artista y **acepta o rechaza**. Solo al aceptar se revelan los datos de contacto del artista (ver "Privacidad de contacto").
+5. **Artista:** en **Mis conexiones** ve el estado de cada solicitud (en revisión, aceptada, no seleccionada) y, cuando el local acepta, la dirección exacta y el teléfono del lugar. Esos datos siguen ahí aunque el local cierre la publicación.
 
 Todo el flujo está disponible también en la API (`/docs`): `POST /api/venues`, `POST|PATCH|DELETE /api/opportunities`, `GET /api/opportunities/mine`, `GET /api/opportunities/{id}/applications`, `PATCH /api/applications/{id}`.
+
+## Privacidad de contacto
+
+Para que el primer acercamiento ocurra dentro de la plataforma (el botón **Quiero conectar**) y no por fuera, los datos que permiten saltársela se revelan **solo cuando el local acepta al artista**, como en Airbnb:
+
+| Dato | Antes de aceptar | Tras aceptar |
+| --- | --- | --- |
+| Local: nombre, tipo, barrio y foto | Visible | Visible |
+| Local: dirección exacta, coordenadas y teléfono | **Ocultos** (el artista ve solo el barrio; sin botón "Cómo llegar") | Visibles para el artista |
+| Artista: perfil, portafolio y video | Visibles para el local (para poder evaluarlo) | Visibles |
+| Artista: Instagram, correo y teléfono | **Ocultos** | Visibles para el local |
+| Texto libre (títulos, descripciones, biografía, mensajes) | Teléfonos, correos, enlaces y usuarios `@` se reemplazan por `[contacto oculto]` | Texto completo |
+
+- La política está en un solo lugar: `backend/app/core/privacy.py` (el enmascarado) y se aplica al armar las respuestas en `opportunities/service.py` y `applications/service.py`. Los datos se guardan completos; solo cambia lo que cada rol recibe de la API.
+- El dueño de una publicación siempre ve sus propios datos sin máscara. La distancia que se muestra a los artistas se redondea a 0,5 km.
+- Las pantallas avisan a ambas partes qué se comparte y cuándo.
+- **Límites:** el nombre del local sigue siendo visible (es parte de la oferta), así que alguien decidido aún podría buscarlo por fuera. El enmascarado no detecta datos escritos con ingenio (números con letras, direcciones en texto). Los enlaces de portafolio y video son externos y podrían contener contacto. Esto reduce el atajo, no lo elimina.
 
 ## Persistencia de datos
 

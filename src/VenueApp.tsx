@@ -339,7 +339,7 @@ function PostForm({ venue, initial, onCancel, onSaved }: { venue: Venue; initial
                 </div>
               </div>
             </div>
-            <div className="full-row"><label htmlFor="description">Sobre la presentación</label><div className="input-shell area"><textarea id="description" value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Cuéntales a los artistas qué tipo de propuesta buscas, el ambiente del lugar y cómo es el repertorio." maxLength={4000} /></div></div>
+            <div className="full-row"><label htmlFor="description">Sobre la presentación</label><div className="input-shell area"><textarea id="description" value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Cuéntales a los artistas qué tipo de propuesta buscas, el ambiente del lugar y cómo es el repertorio." maxLength={4000} /></div><p className="hint">Si escribes teléfonos, correos o enlaces aquí, los artistas los verán ocultos hasta que aceptes su interés.</p></div>
             <div className="full-row">
               <label>El lugar incluye</label>
               <div className="chip-row">
@@ -411,7 +411,7 @@ function ApplicantsScreen({ post, onBack, onChanged }: { post: Opportunity; onBa
             <p>{post.date} · {post.time} · {post.pay} {post.unit}</p>
           </div>
         </div>
-        {list && <p className="applicants-summary">{sorted.length === 0 ? "Todavía nadie ha enviado su perfil." : `${pending} por revisar · ${accepted} ${accepted === 1 ? "aceptado" : "aceptados"}. Los datos de contacto se muestran solo cuando aceptas.`}</p>}
+        {list && <p className="applicants-summary">{sorted.length === 0 ? "Todavía nadie ha enviado su perfil." : `${pending} por revisar · ${accepted} ${accepted === 1 ? "aceptado" : "aceptados"}. Los datos de contacto se muestran solo cuando aceptas; al aceptar, el artista recibe la dirección y el teléfono de tu local.`}</p>}
         {error && <div className="form-error" role="alert">{error}</div>}
         {!list && !error && <p className="applicants-summary">Cargando interesados...</p>}
         <div className="applicant-list">
@@ -441,6 +441,7 @@ function ApplicantCard({ applicant: a, busy, onDecide }: { applicant: Applicant;
         {portfolio && <a href={portfolio} target="_blank" rel="noopener noreferrer"><Icon name="link" size={14} /> Portafolio</a>}
         {video && <a href={video} target="_blank" rel="noopener noreferrer"><Icon name="link" size={14} /> Video</a>}
       </div>
+      {a.status !== "accepted" && <p className="hint">Su Instagram, correo y teléfono se muestran cuando lo aceptas.</p>}
       {a.status === "accepted" && <div className="contact-box">
         <b>Datos de contacto</b>
         <span><Icon name="mail" size={15} /> {artist.email ?? "—"}</span>
@@ -519,7 +520,7 @@ function VenueScreen({ venue, onSaved, onCancel, onLogout }: { venue: Venue | nu
           {zone === OTHER_ZONE
             ? <div><label htmlFor="v_other">¿Cuál barrio?</label><div className="input-shell"><Icon name="map" size={18} /><input id="v_other" value={otherZone} onChange={(event) => setOtherZone(event.target.value)} required minLength={2} maxLength={80} /></div></div>
             : <div><label htmlFor="v_phone">Teléfono de contacto</label><div className="input-shell"><Icon name="phone" size={18} /><input id="v_phone" type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="+57 601 000 0000" maxLength={40} /></div></div>}
-          <div className="full-row"><label htmlFor="v_address">Dirección</label><div className="input-shell"><Icon name="map" size={18} /><input id="v_address" value={address} onChange={(event) => setAddress(event.target.value)} placeholder="Cra. 13 #54-20" required minLength={3} maxLength={200} /></div></div>
+          <div className="full-row"><label htmlFor="v_address">Dirección</label><div className="input-shell"><Icon name="map" size={18} /><input id="v_address" value={address} onChange={(event) => setAddress(event.target.value)} placeholder="Cra. 13 #54-20" required minLength={3} maxLength={200} /></div><p className="hint">La dirección exacta y el teléfono solo se comparten con los artistas que aceptes; los demás ven únicamente el barrio.</p></div>
           {zone === OTHER_ZONE && <div><label htmlFor="v_phone2">Teléfono de contacto</label><div className="input-shell"><Icon name="phone" size={18} /><input id="v_phone2" type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} maxLength={40} /></div></div>}
           <div className="full-row"><label htmlFor="v_desc">Sobre tu local</label><div className="input-shell area"><textarea id="v_desc" value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Cuéntales a los artistas cómo es el lugar, el público y el ambiente." maxLength={2000} /></div></div>
           <div className="full-row"><label>Foto del local</label><ImagePicker value={image} onChange={setImage} hint="Se usa en tus publicaciones que no tengan una imagen propia." /></div>
