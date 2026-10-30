@@ -61,7 +61,25 @@ cd backend && pip install -r requirements-dev.txt && python -m pytest -q
 cd .. && pnpm install --frozen-lockfile && pnpm typecheck && pnpm build
 ```
 
-El despliegue continuo (CD) todavía no está configurado.
+## Despliegue
+
+Frontend en **Vercel**, backend en **Render** y base de datos PostgreSQL en **Neon**. El despliegue continuo lo hacen las integraciones de Git de cada servicio: cada push a `main` publica (Render solo después de que el CI pase), sin workflow adicional.
+
+| Archivo | Para qué |
+| --- | --- |
+| `vercel.json` | Build del frontend (Vite + pnpm) |
+| `render.yaml` | Blueprint del backend (servicio web en Python) |
+| `backend/.env.example` | Variables del backend |
+
+Variables de entorno:
+
+| Variable | Dónde | Valor |
+| --- | --- | --- |
+| `VITE_API_URL` | Vercel | URL pública del backend |
+| `DATABASE_URL` | Render | Cadena de conexión directa de Neon |
+| `CORS_ORIGINS` | Render | URL del frontend, sin barra final |
+| `JWT_SECRET` | Render | Se genera sola |
+| `SEED_DEMO` | Render | `false` en producción |
 
 ## Flujo de negocio
 

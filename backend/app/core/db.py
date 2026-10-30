@@ -9,10 +9,13 @@ from app.core.config import settings
 
 _is_sqlite = settings.database_url.startswith("sqlite")
 
-engine = create_engine(
-    settings.database_url,
-    connect_args={"check_same_thread": False} if _is_sqlite else {},
-)
+if _is_sqlite:
+    engine = create_engine(settings.database_url, connect_args={"check_same_thread": False})
+else:
+    # Servicios como Neon suspenden el cómputo tras ~5 min sin uso y cierran las conexiones
+    # inactivas: pre_ping detecta una conexión muerta antes de usarla y recycle evita
+    # reutilizar conexiones más viejas que ese plazo.
+    engine = create_engine(settings.database_url, pool_pre_ping=True, pool_recycle=240)
 
 if _is_sqlite:
 
