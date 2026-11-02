@@ -54,7 +54,7 @@ def test_artist_profile_completeness(client):
 def test_list_filters_and_flags(client):
     h = login(client, "sofia@luna.com")
     all_items = client.get("/api/opportunities", headers=h).json()
-    assert len(all_items) == 6
+    assert len(all_items) == 12  # 6 originales + 6 de los perfiles adicionales
     assert all_items == sorted(all_items, key=lambda o: o["starts_at"])
     assert all(o["venue"]["name"] for o in all_items)
 

@@ -29,6 +29,8 @@ La API queda en http://localhost:8000 y la documentación interactiva en http://
 | --- | --- | --- |
 | Artista | `sofia@luna.com` | `colsong123` |
 | Establecimiento | `casafrida@colsong.co`, `cafedelparque@colsong.co`, `distrito47@colsong.co` | `colsong123` |
+| Artistas adicionales | `mapaches@`, `camila.rios@`, `nebula@`, `andres.pardo@`, `cumbia@`, `veronica.salcedo@` + `artistas.colsong.co` | `colsong123` |
+| Establecimientos adicionales | `cantinaquinta@colsong.co`, `teatrointimo@colsong.co`, `terrazausaquen@colsong.co` | `colsong123` |
 
 **Frontend** (Node 22 + pnpm):
 
@@ -114,7 +116,7 @@ Las publicaciones, perfiles, postulaciones y favoritos se guardan en la base de 
 
 - **Local:** SQLite (`backend/colsong.db`, se crea sola; ignorada por Git). Los datos sobreviven a reiniciar el servidor.
 - **Producción:** PostgreSQL. Basta con definir `DATABASE_URL` (por ejemplo, la URL que entrega Neon, `postgresql://...`); el backend ya incluye el driver y el CI prueba contra PostgreSQL 16 en cada push.
-- Los datos de demostración (`SEED_DEMO=true`) solo se cargan si la base está vacía.
+- Los datos de demostración (`SEED_DEMO=true`) solo añaden las cuentas que falten; nunca duplican ni modifican las existentes.
 - Eliminar una publicación borra en cascada sus postulaciones y favoritos.
 
 ## Arquitectura del backend
