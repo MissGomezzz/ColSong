@@ -29,7 +29,7 @@ La API queda en http://localhost:8000 y la documentación interactiva en http://
 | --- | --- | --- |
 | Artista | `sofia@luna.com` | `colsong123` |
 | Establecimiento | `casafrida@colsong.co`, `cafedelparque@colsong.co`, `distrito47@colsong.co` | `colsong123` |
-| Artistas adicionales | `mapaches@`, `camila.rios@`, `nebula@`, `andres.pardo@`, `cumbia@`, `veronica.salcedo@` + `artistas.colsong.co` | `colsong123` |
+| Artistas adicionales | `mapaches@`, `camila.rios@`, `nebula@`, `andres.pardo@`, `cumbia@`, `vero@` + `artistas.colsong.co` | `colsong123` |
 | Establecimientos adicionales | `cantinaquinta@colsong.co`, `teatrointimo@colsong.co`, `terrazausaquen@colsong.co` | `colsong123` |
 
 **Frontend** (Node 22 + pnpm):

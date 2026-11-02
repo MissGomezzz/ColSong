@@ -48,7 +48,7 @@ EXTRA_ARTISTS = [
     ("cumbia@artistas.colsong.co", "Laura Mejía", "Cumbia Subterránea", "Orquesta", ["Salsa / Latino"],
      "Nueve músicos, cumbia y salsa para bailar. Repertorio de clásicos y arreglos propios.",
      "+57 314 000 0105", "@cumbiasubterranea", "https://cumbiasubterranea.example.com", "https://youtu.be/demo-cumbia"),
-    ("veronica.salcedo@artistas.colsong.co", "Verónica Salcedo", "Verónica Salcedo", "Cantante", ["Pop", "Indie / Alternativo"],
+    ("vero@artistas.colsong.co", "Verónica Salcedo", "Verónica Salcedo", "Cantante", ["Pop", "Indie / Alternativo"],
      "Pop de autor con arreglos minimalistas. Primer sencillo publicado este año; busca sus primeras fechas en vivo.",
      "+57 315 000 0106", "@veronicasalcedo", None, None),
 ]
